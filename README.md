@@ -5,7 +5,7 @@ Setup your Stable diffusion repo (mainly for runpod rn)
 
 # Instructions
 
-- Use reactions to give instructions in the discord channel : None -> INSTALL, no_entry_sign (b'\xf0\x9f\x9a\xab') -> DELETE FILE, x (b'\xe2\x9d\x8c') -> SKIP
+- Use reactions to give instructions in the discord channel : None -> INSTALL, 🚫 (b'\xf0\x9f\x9a\xab') -> DELETE FILE, ❌ (b'\xe2\x9d\x8c') -> SKIP
 
 - The only right way to reset the cache is to delete the .setup-cache cache file located where this file is
 
