@@ -27,7 +27,7 @@ Setup your Stable diffusion repo (mainly for runpod rn)
 
 - Add a prompt in case there are multiple files included with the model link (could also just be a VAE, in that case download it without prompting the user)
 
-- Add a way to rename downloaded models without breaking everything lol (updating the cache basically, could be done with smth like python setup.py -r <path to model> new_name (with or without the extension), using the path to be able to use TAB so that it's easier)
+- Add a way to rename downloaded models without breaking everything lol (updating the cache basically, could be done with smth like python setup.py -r \<path to model\> new_name (with or without the extension, using the path to be able to use TAB so that it's easier)
 
 - Add support for all other types (poses, controlnet, ...)
 
