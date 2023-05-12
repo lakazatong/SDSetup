@@ -81,7 +81,6 @@ def load_json_with_comments(content, encoding='utf-8'):
 # init
 
 class SDSetup:
-
 	# constants
 	config_filename = 'config.json'
 	cache_filename = '.setup-cache'
@@ -175,7 +174,7 @@ class SDSetup:
 				if key == 'mounting_separator' and value == None: break
 				if type(value) is str: value = f"'{value}'"
 				mount += f'{key} = {value}\n\t'
-			content = content.replace('class SDSetup:\n', mount)
+			content = content.replace('class SDSetup:', mount, 1)
 			with open(__file__, 'w') as f:
 				f.write(content)
 				exit(0)
@@ -205,7 +204,7 @@ class SDSetup:
 			messages = json.loads(f.read().decode('utf-8'))
 		
 
-
+'''
 try:
 
 	
@@ -494,7 +493,7 @@ try:
 except Exception as e:
 	os.system(f'rm -f messages page favorites')
 	os.system(f"echo {e}")
-
+'''
 
 def main():
 	sdsetup = SDSetup()
