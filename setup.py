@@ -171,7 +171,7 @@ class SDSetup:
 			# mount the config.json file into this class
 			with open(__file__, 'rb') as f:
 				content = f.read().decode('utf-8')
-			mount = f'class SDSetup:\n\t'
+			mount = f'class SDSetup:\n\t# whatever is put here (between "class SDSetup:" and the next comment) will be replaced with the mounted config.json\n\t'
 			for key, value in self.config.items():
 				if key == 'mounting_separator' and value == None: break
 				if type(value) is str: value = f"'{value}'"
