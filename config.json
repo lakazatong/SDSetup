@@ -4,10 +4,8 @@
 	// required if you wish to use the --favorites argument (also explained in the README)
 	"civitai_api_key": "YOUR_API_KEY",
 	// always required
-	"server_id": 0,
-	// always required
 	"channel_id": 0,
-	// -1 for no limit
+	// -1 for no limit (will depend on the maximum provided by the Discord API)
 	"msg_limit": -1,
 	
 	// wget is used to make requests, these two options show or hide its progress bar
