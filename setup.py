@@ -93,7 +93,7 @@ class SDSetup:
 	cache = {}
 	args = []
 
-	def load_config():
+	def load_config(self):
 		if os.path.exists(self.config_filename):
 			with open(self.config_filename, 'rb') as f:
 				content = f.read()
@@ -106,7 +106,7 @@ class SDSetup:
 			cprint(f'Did not find {self.config_filename}', RED)
 			exit(1)
 
-	def load_cache():
+	def load_cache(self):
 		self.cache = {'updated-sd-repo': False, 'downloaded_models_in_discord_channel': [], 'models_in_civitai_favorites': []}
 		if os.path.exists():
 			with open(self.cache_filename, 'rb') as f:
@@ -119,7 +119,7 @@ class SDSetup:
 						exit(1)
 		self.cache['updated-sd-repo'] = self.config['skip_update_sd_repo']
 
-	def parse_args():
+	def parse_args(self):
 		args_info = [
 			[self.config['SELF_DESTROY'], self.config['SELF_DESTROY_SHORT'][1:], self.config['SELF_DESTROY_LONG']],
 			[self.config['QUICK'], self.config['QUICK_SHORT'][1:], self.config['QUICK_LONG']],
@@ -142,7 +142,7 @@ class SDSetup:
 
 		self.args = [args_info[i][0] for i in range(len(args_info))]
 
-	def clone_required_repos():
+	def clone_required_repos(self):
 		# folders safety
 		for folder in ['models', 'extensions', 'embeddings', 'repositories', 'models/Stable-diffusion', 'models/Lora', 'models/LyCORIS']:
 			if not os.path.exists(folder):
@@ -166,7 +166,7 @@ class SDSetup:
 		self.load_config()
 		self.parse_args()
 		
-		if args[3]:
+		if self.args[3]:
 			# mount the config.json file
 			with open(__file__, 'rb') as f:
 				content = f.read().decode('utf-8')
@@ -175,7 +175,7 @@ class SDSetup:
 				if key == 'mounting_separator' and value == None: break
 				if type(value) is str: value = f"'{value}'"
 				mount += f'{key} = {value}\n\t'
-			content = content.replace('class SDSetup:', mount)
+			content = content.replace('class SDSetup:\n', mount)
 			with open(__file__, 'w') as f:
 				f.write(content)
 				exit(0)
@@ -196,7 +196,7 @@ class SDSetup:
 			
 			self.clone_required_repos()
 
-	def get_messages():
+	def get_messages(self):
 		# get messages from channel
 		cprint('getting messages...', BLUE)
 		url = f"https://discord.com/api/v9/channels/{self.config['channel_id']}/messages?limit={self.config['msg_limit']}" if self.config['msg_limit'] != -1 else f"https://discord.com/api/v9/channels/{self.config['channel_id']}/messages"
