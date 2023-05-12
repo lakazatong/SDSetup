@@ -1,59 +1,5 @@
 #!/usr/bin/env python
 
-#------------------------------------------------------------------------------------------
-
-# USER DEFINED VARIABLES
-
-# always required
-discord_auth_token = 'YOUR_TOKEN'
-
-# required if you wish to use the --favorites argument
-civitai_api_key = 'YOUR_API_KEY'
-	
-# self explanatory
-server_id = 0
-channel_id = 0
-msg_limit = 50
-show_files_progress_bar = False
-show_models_progress_bar = True
-
-# for debugging in local, should be False
-# (IT ALLOWS FOR NSFW RESULTS, it will use the stable diffusion repo, not the one provided by runpod)
-# (I also have to run the webui with the '--no-half-vae --precision full' args to never get black images it seems)
-# (if anyone know why it creates black images when doing nsfw prompts in runpod, mp me at lakazatong#0206)
-# (that would not need to clone the entire repo to speed up the setup)
-skip_update_sd_repo = False 	
-
-# default command line args
-
-# example command :
-# python setup.py -dqf
-# it will :
-# run the setup, destroy the setup.py, don't prompt Press Enter at the end and look at your civitai favorites as well
-
-# destroy this script when it is done
-SELF_DESTROY = False
-SELF_DESTROY_SHORT = '-d'
-SELF_DESTROY_LONG = '--destroy'
-	
-# skip the "Press Enter" when it is done
-QUICK = False
-QUICK_SHORT = '-q'
-QUICK_LONG = '--quick'
-	
-# also look at models in your civitai favorites (REQUIRES YOUR CIVITAI API KEY)
-USE_CIVITAI_FAVORITES = False
-USE_CIVITAI_FAVORITES_SHORT = '-f'
-USE_CIVITAI_FAVORITES_LONG = '--favorites'
-
-# could seek for models and update the cache accordingly, but is not interesting to do as mentioned in the comments at the top of this file
-# meaning right now it can say 'model_name is already deleted' but it is not because you installed it manually
-# SEEK_FOR_MODELS = False
-# SEEK_FOR_MODELS_SHORT = '-c'
-# SEEK_FOR_MODELS_LONG = '--cache'
-
-#------------------------------------------------------------------------------------------
-				
 # imports
 
 import os
@@ -68,13 +14,11 @@ except:
 
 # functions
 
-# here only GREEN (print is expected) and RED (print is not expected) are used
 BLACK, RED, GREEN, YELLOW, BLUE, PURPLE, CYAN, WHITE = 30, 31, 32, 33, 34, 35, 36, 37
-
 def cprint(string, color_code=30):
 	print(f"\033[{color_code}m{string}\033[0m")
 
-def wget(url, output_filename:str=None, output_dir:str=None, show_progress:bool=True, quiet:bool=True, auth:tuple[str, str]=None, headers:dict=None, print_cmd:bool=False):
+def wget(url:str, output_filename:str=None, output_dir:str=None, show_progress:bool=True, quiet:bool=True, auth:tuple[str, str]=None, headers:dict=None, print_cmd:bool=False):
 	output_opt = f'-O "{output_filename}"' if output_filename != None else ''
 	progress_opt = '--show-progress' if show_progress else ''
 	quiet_opt = '-q' if quiet else ''
@@ -115,89 +59,156 @@ def find_index(lst, key, value):
 	filtered = [i for i, d in enumerate(lst) if d.get(key) == value]
 	return filtered[0] if len(filtered) > 0 else -1
 
+def load_json_with_comments(content, encoding='utf-8'):
+	if not type(content) is str:
+		content = content.decode(encoding)
+	r = ''
+	i = 0
+	while i < len(content)-1:
+		if content[i]+content[i+1] == '/*':
+			while content[i]+content[i+1] != '*/':
+				i += 1
+			i += 2
+
+		if content[i]+content[i+1] == '//':
+			while content[i] != '\n':
+				i += 1
+		r += content[i]
+		i += 1
+	r += content[i]
+	return json.loads(r)
+
 # init
 
-wd = os.getcwd()
-running_in_runpod_env = wd == '/workspace/stable-diffusion-webui'
-cache = {}
+class SDSetup:
 
-# if running_in_runpod_env:
-# 	if wd != "/workspace/stable-diffusion-webui":
-# 		cprint(f"setup.py must be put in /workspace/stable-diffusion-webui", RED)
-# 		exit(1)
+	# constants
+	config_filename = 'config.json'
+	cache_filename = '.setup-cache'
 
-discord_headers = {
-	"authorization": discord_auth_token
-}
+	# defined at runtime
+	wd = ''
+	running_in_runpod_env = False
+	models_folder = {}
+	cache = {}
+	args = []
 
-models_folder = {
-	'Checkpoint': f'{wd}/models/Stable-diffusion',
-	'LORA': f'{wd}/models/Lora',
-	'LoCon': f'{wd}/models/LyCORIS',
-	'TextualInversion': f'{wd}/embeddings'
-}
+	def load_config():
+		if os.path.exists(self.config_filename):
+			with open(self.config_filename, 'rb') as f:
+				content = f.read()
+				if content != b'':
+					self.config = load_json_with_comments(content.decode('utf-8'))
+				else:
+					cprint(self.config_filename+' content is empty', RED)
+					exit(1)
+		else:
+			cprint(f'Did not find {self.config_filename}', RED)
+			exit(1)
+
+	def load_cache():
+		self.cache = {'updated-sd-repo': False, 'downloaded_models_in_discord_channel': [], 'models_in_civitai_favorites': []}
+		if os.path.exists():
+			with open(self.cache_filename, 'rb') as f:
+				content = f.read()
+				if content != b'':
+					try:
+						self.cache = json.loads(content.decode('utf-8'))
+					except:
+						cprint(f'failed to load {self.cache_filename}', RED)
+						exit(1)
+		self.cache['updated-sd-repo'] = self.config['skip_update_sd_repo']
+
+	def parse_args():
+		args_info = [
+			[self.config['SELF_DESTROY'], self.config['SELF_DESTROY_SHORT'][1:], self.config['SELF_DESTROY_LONG']],
+			[self.config['QUICK'], self.config['QUICK_SHORT'][1:], self.config['QUICK_LONG']],
+			[self.config['USE_CIVITAI_FAVORITES'], self.config['USE_CIVITAI_FAVORITES_SHORT'][1:], self.config['USE_CIVITAI_FAVORITES_LONG']],
+			[self.config['MOUNT'], self.config['MOUNT_SHORT'][1:], self.config['MOUNT_LONG']],
+		]
+
+		is_long_arg = [False]*(len(sys.argv)-1)
+		for i in range(1, len(sys.argv)):
+			for arg in args_info:
+				if sys.argv[i] == arg[2]:
+					arg[0] = True
+					is_long_arg[i-1] = True
+					break
+		for i in range(1, len(sys.argv)):
+			if not is_long_arg[i-1]:
+				for arg in args_info:
+					if arg[1] in sys.argv[i]:
+						arg[0] = True
+
+		self.args = [args_info[i][0] for i in range(len(args_info))]
+
+	def clone_required_repos():
+		# folders safety
+		for folder in ['models', 'extensions', 'embeddings', 'repositories', 'models/Stable-diffusion', 'models/Lora', 'models/LyCORIS']:
+			if not os.path.exists(folder):
+				os.system('mkdir '+folder)
+
+		# clone the lyoris repo
+		if not os.path.exists('extensions/a1111-sd-webui-lycoris'):
+			cprint('\ncloning the lycoris ripo...', GREEN)
+			os.system('cd extensions && git clone https://github.com/KohakuBlueleaf/a1111-sd-webui-lycoris')
+		
+		# clone the stablediffusion 2.1 repo
+		if not bool(self.cache['updated-sd-repo']):
+			cprint('\ncloning the stablediffusion ripo...', GREEN)
+			if os.path.exists('repositories/stable-diffusion-stability-ai'):
+				os.system('rm -rf repositories/stable-diffusion-stability-ai')
+			os.system('cd repositories && git clone https://github.com/Stability-AI/stablediffusion')
+			os.system('mv repositories/stablediffusion repositories/stable-diffusion-stability-ai')
+			self.cache['updated-sd-repo'] = True
+
+	def __init__(self):
+		self.load_config()
+		self.parse_args()
+		
+		if args[3]:
+			# mount the config.json file
+			with open(__file__, 'rb') as f:
+				content = f.read().decode('utf-8')
+			mount = f'class SDSetup:\n\t'
+			for key, value in self.config.items():
+				if key == 'mounting_separator' and value == None: break
+				if type(value) is str: value = f"'{value}'"
+				mount += f'{key} = {value}\n\t'
+			content = content.replace('class SDSetup:', mount)
+			with open(__file__, 'w') as f:
+				f.write(content)
+				exit(0)
+		else:
+			# proceed with the initialization setup
+			self.load_cache()
+			self.wd = os.getcwd()
+			self.running_in_runpod_env = wd == '/workspace/stable-diffusion-webui'
+			self.discord_headers = {
+				"authorization": self.config['discord_auth_token']
+			}
+			self.models_folder =  {
+				"Checkpoint": f"{wd}/models/Stable-diffusion",
+				"LORA": f"{wd}/models/Lora",
+				"LoCon": f"{wd}/models/LyCORIS",
+				"TextualInversion": f"{wd}/embeddings"
+			}
+			
+			self.clone_required_repos()
+
+	def get_messages():
+		# get messages from channel
+		cprint('getting messages...', BLUE)
+		url = f"https://discord.com/api/v9/channels/{self.config['channel_id']}/messages?limit={self.config['msg_limit']}" if self.config['msg_limit'] != -1 else f"https://discord.com/api/v9/channels/{self.config['channel_id']}/messages"
+		wget(url, output_filename='messages', headers=discord_headers)
+		with open('messages', 'rb') as f:
+			messages = json.loads(f.read().decode('utf-8'))
+		
+
 
 try:
 
-	# parse args
-	args = [[SELF_DESTROY_LONG, SELF_DESTROY_SHORT, SELF_DESTROY], [QUICK_LONG, QUICK_SHORT, QUICK], [USE_CIVITAI_FAVORITES_LONG, USE_CIVITAI_FAVORITES_SHORT, USE_CIVITAI_FAVORITES]]
-
-	is_long_arg = [False]*(len(sys.argv)-1)
-	for i in range(1, len(sys.argv)):
-		sys_arg = sys.argv[i]
-		for arg in args:
-			if sys_arg == arg[0]:
-				arg[2] = True
-				is_long_arg[i-1] = True
-				break
-	for i in range(1, len(sys.argv)):
-		if not is_long_arg[i-1]:
-			sys_arg = sys.argv[i]
-			for arg in args:
-				if arg[1] in sys_arg:
-					arg[2] = True
-
-	SELF_DESTROY = args[0][2]
-	QUICK = args[1][2]
-	USE_CIVITAI_FAVORITES = args[2][2]
-
-	# load cache
-	if os.path.exists('.setup-cache'):
-		with open('.setup-cache', 'rb') as f:
-			content = f.read()
-			if content != b'':
-				cache = json.loads(content)
-	else:
-		cache = {'updated-sd-repo': False, 'downloaded_models_in_discord_channel': [], 'models_in_civitai_favorites': []}
-
-	cache['updated-sd-repo'] = skip_update_sd_repo
-
-	os.system("clear")
-	# folders safety
-	for folder in ['models', 'extensions', 'embeddings', 'repositories', 'models/Stable-diffusion', 'models/Lora', 'models/LyCORIS']:
-		if not os.path.exists(folder):
-			os.system('mkdir '+folder)
 	
-	# clone the lyoris repo
-	if not os.path.exists('extensions/a1111-sd-webui-lycoris'):
-		cprint('\ncloning the lycoris ripo...', GREEN)
-		os.system('cd extensions && git clone https://github.com/KohakuBlueleaf/a1111-sd-webui-lycoris')
-	
-	# clone the stablediffusion 2.1 repo
-	if not bool(cache['updated-sd-repo']):
-		cprint('\ncloning the stablediffusion ripo...', GREEN)
-		if os.path.exists('repositories/stable-diffusion-stability-ai'):
-			os.system('rm -rf repositories/stable-diffusion-stability-ai')
-		os.system('cd repositories && git clone https://github.com/Stability-AI/stablediffusion')
-		os.system('mv repositories/stablediffusion repositories/stable-diffusion-stability-ai')
-		cache['updated-sd-repo'] = True
-	
-
-	# get messages from channel
-	cprint('getting messages...', BLUE)
-	wget(f"https://discord.com/api/v9/channels/{channel_id}/messages?limit={msg_limit}", output_filename='messages', headers=discord_headers)
-	with open('messages', 'rb') as f:
-		messages = json.loads(f.read().decode('utf-8'))
 	k, n = 0, len(messages)
 	currently_found_models_page_ids = []
 
@@ -483,54 +494,13 @@ try:
 except Exception as e:
 	os.system(f'rm -f messages page favorites')
 	os.system(f"echo {e}")
-t_dir=dir_path, output_filename=model_file_name, show_progress=show_models_progress_bar)
-			# yes it is
-			else:
-				cprint(f'{model_name} is already installed', GREEN)
-			
-			currently_found_models_page_ids.append(model_page_id)
-		
-		# delete models that are no longer in civitai favorites
-		for model in cache['models_in_civitai_favorites']:
-			if not model['model_page_id'] in currently_found_models_page_ids:
-				k += 1
-				cprint(f'\n({k}/{n})', GREEN)
-				# user removed this model from its favorites, interprets it as 'delete it'
-				model_type = model['model_type']
-				model_name = model['model_name']
-				model_file_name = model['model_file_name']
-				dir_path = models_folder[model_type]
-				full_path = f'{dir_path}/{model_file_name}'
-				if os.path.exists(full_path):
-					cprint(f'deleting {model_name}...', GREEN)
-					os.system('rm -f '+full_path)
-					# updating cache (cannot use indices since we are iterating over the list itself :c)
-					cache['models_in_civitai_favorites'].remove(model)
-				else:
-					cprint(f'{model_name} is already deleted', GREEN)
 
-	# save cache
-	with open('.setup-cache', 'w+') as f:
-		json.dump(cache, f, indent=3)
-	# for convenience
-	if running_in_runpod_env:
-		with open('~/.bashrc', 'r') as f:
-			bashrc_content = f.read()
-		bashrc_content = subprocess.check_output("cat ~/.bashrc", shell=True).decode('utf-8')
-		if bashrc_content[-(len('alias r="python relauncher.py"')+1):].strip() != 'alias r="python relauncher.py"':
-			os.system("echo 'alias r=\"python relauncher.py\"' >> ~/.bashrc")
-	# done
-	cprint('\nAll done, run the r command to run the relauncher.py script', BLUE)
-	if not QUICK: os.system('bash -c "read -p \'\nPress Enter\'"')
+
+def main():
+	sdsetup = SDSetup()
 	os.system("clear")
-	# cleanup
-	os.system(f'rm -f messages page favorites')
-	# self destroys
-	if SELF_DESTROY: subprocess.Popen('rm setup.py', shell=True)
-	# reload terminal (to reload ~/.bashrc)
-	os.system("exec bash")
+	# ...
+	
 
-except Exception as e:
-	os.system(f'rm -f messages page favorites')
-	os.system(f"echo {e}")
-	os.system(f"echo {e}")
+if __name__ == '__main__':
+	main()

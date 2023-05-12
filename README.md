@@ -17,7 +17,7 @@ git clone https://github.com/lakazatong/SDSetup
 
 Fill up config.json with the required fields and your preferences, then run:
 ```
-python setup.py -c
+python setup.py -m
 ```
 Your setup.py is now ready!
 
