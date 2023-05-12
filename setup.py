@@ -174,6 +174,10 @@ class SDSetup:
 				if key == 'mounting_separator' and value == None: break
 				if type(value) is str: value = f"'{value}'"
 				mount += f'{key} = {value}\n\t'
+
+			i = content.find('class SDSetup:')+len('class SDSetup:')
+			j = content.find('# constants')-1
+			content = content[:i]+'\n\t'+content[j:]
 			content = content.replace('class SDSetup:', mount, 1)
 			with open(__file__, 'w') as f:
 				f.write(content)
