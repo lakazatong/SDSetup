@@ -81,6 +81,8 @@ def load_json_with_comments(content, encoding='utf-8'):
 # init
 
 class SDSetup:
+	# whatever is put between class "SDSetup:" and "# constants" will be replaced with the mounted config.json
+	
 	# constants
 	config_filename = 'config.json'
 	cache_filename = '.setup-cache'
