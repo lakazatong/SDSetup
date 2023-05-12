@@ -1,0 +1,48 @@
+{
+	// always required (how to get it is explained in the README)
+	"discord_auth_token": "YOUR_TOKEN",
+	// required if you wish to use the --favorites argument (also explained in the README)
+	"civitai_api_key": "YOUR_API_KEY",
+	// always required
+	"server_id": 000000000000000000,
+	// always required
+	"channel_id": 0000000000000000000,
+	// -1 for no limit
+	"msg_limit": -1,
+	
+	// wget is used to make requests, these two options show or hide its progress bar
+	"show_files_progress_bar": false,
+	"show_models_progress_bar": true,
+
+	// for debugging in local, should be false
+	// IT ALLOWS FOR NSFW RESULTS, it will use the stable diffusion repo, not the one provided by runpod
+	// I also have to run the webui with the '--no-half-vae --no-half --precision full' args to never get black images it seems
+	// if anyone know why it creates black images when doing nsfw prompts in runpod, mp me at lakazatong#0206
+	// (that would not need to clone the entire repo to speed up the setup like I currently do)
+	"skip_update_sd_repo": false,
+	
+	// default values of command line args (example command at the top of the README)
+
+	// destroy setup.py when it is done
+	"SELF_DESTROY": false,
+	"SELF_DESTROY_SHORT": "-d",
+	"SELF_DESTROY_LONG": "--destroy",
+		
+	// skip the "Press Enter" when it is done
+	"QUICK": false,
+	"QUICK_SHORT": "-q",
+	"QUICK_LONG": "--quick",
+		
+	// also look at models in your civitai favorites (REQUIRES YOUR CIVITAI API KEY)
+	"USE_CIVITAI_FAVORITES": false,
+	"USE_CIVITAI_FAVORITES_SHORT": "-f",
+	"USE_CIVITAI_FAVORITES_LONG": "--favorites"
+
+	// could seek for models and update the cache accordingly, but is not interesting to do
+	// meaning right now it can say 'model_name is already deleted' but it is not because you installed it manually
+	// (because it did not found the model_name in its cache)
+	// this option would then do nothing but that, ignoring all other arguments
+	// SEEK_FOR_MODELS = False
+	// SEEK_FOR_MODELS_SHORT = '-c'
+	// SEEK_FOR_MODELS_LONG = '--cache'
+}
