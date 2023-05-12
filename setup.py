@@ -177,7 +177,7 @@ class SDSetup:
 
 			i = content.find('class SDSetup:')+len('class SDSetup:')
 			j = content.find('# constants')-1
-			content = content[:i]+'\n\t'+content[j:]
+			content = content[:i]+'\n'+content[j:]
 			content = content.replace('class SDSetup:', mount, 1)
 			with open(__file__, 'w') as f:
 				f.write(content)
