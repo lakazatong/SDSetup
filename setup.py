@@ -96,20 +96,6 @@ class SDSetup:
 	config_filename = 'config.json'
 	cache_filename = '.setup-cache'
 
-	# defined at runtime
-	wd = ''
-	running_in_runpod_env = False
-	models_folder = {}
-	cache = {}
-	messages = {}
-	args = {}
-	# is used to then compare which models of the cache were not found thus deleting them
-	currently_found_model_page_ids = []
-
-	# used for display
-	k = 0
-	n = 0
-
 	def load_config(self):
 		if os.path.exists(self.config_filename):
 			with open(self.config_filename, 'rb') as f:
@@ -164,6 +150,7 @@ class SDSetup:
 					if arg[1] in sys.argv[i]:
 						arg[0] = True
 
+		self.args = {}
 		for i, arg_info in enumerate(args_info):
 			self.args[arg_info[2][2:]] = args_info[i][0]
 
@@ -172,11 +159,6 @@ class SDSetup:
 		for folder in ['models', 'extensions', 'embeddings', 'repositories', 'models/Stable-diffusion', 'models/Lora', 'models/LyCORIS']:
 			if not os.path.exists(folder):
 				os.system('mkdir '+folder)
-
-		# clone the lyoris repo
-		if not os.path.exists('extensions/a1111-sd-webui-lycoris'):
-			cprint('\ncloning the lycoris ripo...', GREEN)
-			os.system('cd extensions && git clone https://github.com/KohakuBlueleaf/a1111-sd-webui-lycoris')
 		
 		# clone the stablediffusion 2.1 repo
 		if not bool(self.cache['updated-sd-repo']):
@@ -186,6 +168,12 @@ class SDSetup:
 			os.system('cd repositories && git clone https://github.com/Stability-AI/stablediffusion')
 			os.system('mv repositories/stablediffusion repositories/stable-diffusion-stability-ai')
 			self.cache['updated-sd-repo'] = True
+
+		# clone the lyoris repo
+		if not os.path.exists('extensions/a1111-sd-webui-lycoris'):
+			cprint('\ncloning the lycoris ripo...', GREEN)
+			os.system('cd extensions && git clone https://github.com/KohakuBlueleaf/a1111-sd-webui-lycoris')
+		
 
 	def __init__(self):
 		if not self.config_loaded:
@@ -229,8 +217,16 @@ class SDSetup:
 			self.load_cache()
 			self.wd = os.getcwd()
 			self.running_in_runpod_env = self.wd == '/workspace/stable-diffusion-webui'
+			# is used to then compare which models of the cache were not found thus deleting them
+			self.currently_found_model_page_ids = []
+			# used for display
+			self.k = 0
+			self.n = 0
 			self.discord_headers = {
-				"authorization": self.discord_auth_token
+				"Authorization": self.discord_auth_token
+			}
+			self.civitai_headers = {
+				'Authorization': f'Bearer {self.civitai_api_key}'
 			}
 			self.models_folder =  {
 				"Checkpoint": f"{self.wd}/models/Stable-diffusion",
@@ -238,7 +234,6 @@ class SDSetup:
 				"LoCon": f"{self.wd}/models/LyCORIS",
 				"TextualInversion": f"{self.wd}/embeddings"
 			}
-			
 			self.clone_required_repos()
 
 	def get_messages(self):
@@ -466,7 +461,7 @@ class SDSetup:
 
 	def get_favorites(self):
 		cprint('\ngetting favorites...', BLUE)
-		if wget(f'https://civitai.com/api/v1/models?favorites=true&token={self.civitai_api_key}', output_filename='favorites'):
+		if wget(f'https://civitai.com/api/v1/models?favorites=true', headers=self.civitai_headers, output_filename='favorites'):
 			with open('favorites', 'rb') as f:
 				self.favorites = json.loads(f.read().decode('utf-8'))
 			return True
