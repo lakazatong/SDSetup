@@ -213,12 +213,12 @@ class SDSetup:
 			content = content.replace('class SDSetup:', mount, 1)
 			with open(__file__, 'w') as f:
 				f.write(content)
-				cprint('\nconfig loaded,\ncopy and paste setup.py in any Stable Diffusion web UI repository and run:', GREEN)
-				cprint('python setup.py\n', PURPLE)
+				cprint('\nconfig loaded\ncopy and paste setup.py in any Stable Diffusion web UI repository and run:', GREEN)
+				cprint(f'{sys.argv[0]} setup.py\n', PURPLE)
 				cprint('do not forget the -f option if you want it to install models from your civitai favorites', GREEN)
 				cprint('it requires your civitai_api_key in the config.json\n', GREEN)
-				cprint('\nif you want to load a new config, just run this command again:', GREEN)
-				cprint('python setup.py -m\n', PURPLE)
+				cprint('if you want to load a new config, just run this command again:', GREEN)
+				cprint(f'{sys.argv[0]} setup.py -m\n', PURPLE)
 				exit(0)
 		else:
 			# proceed with the initialization setup
@@ -532,10 +532,10 @@ class SDSetup:
 		if bashrc_path != None:
 			with open(bashrc_path, 'r') as f:
 				bashrc_content = f.read()
-			if 'alias r="python relauncher.py"' not in bashrc_content:
+			if f'alias r="{sys.argv[0]} relauncher.py"' not in bashrc_content:
 			# if bashrc_content.split('\n')[-1].strip() != 'alias r="python relauncher.py"':
 			# if bashrc_content[-(len('alias r="python relauncher.py"')+1):].strip() != 'alias r="python relauncher.py"':
-				os.system(f"echo 'alias r=\"python relauncher.py\"' >> {bashrc_path}")
+				os.system(f"echo 'alias r=\"{sys.argv[0]} relauncher.py\"' >> {bashrc_path}")
 			cprint('\nrun the r command to run the relauncher.py script', PURPLE)
 		else:
 			cprint('\ncould not find the .bashrc file', RED)
