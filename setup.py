@@ -113,10 +113,11 @@ class SDSetup:
 					self.config = load_json_with_comments(content.decode('utf-8'))
 				else:
 					cprint(self.config_filename+' content is empty', RED)
-					exit(1)
+					return False
 		else:
 			cprint(f'Did not find {self.config_filename}', RED)
-			exit(1)
+			return False
+		return True
 
 	def load_cache(self):
 		self.cache = {'updated-sd-repo': False, 'downloaded_models_in_discord_channel': [], 'models_in_civitai_favorites': []}
@@ -181,20 +182,37 @@ class SDSetup:
 			self.cache['updated-sd-repo'] = True
 
 	def __init__(self):
+		if not config_loaded:
+			if not self.load_config():
+				exit(1)
 		self.parse_args()
 		
 		if self.args['mount']:
-			self.load_config()
 			# mount the config.json file into this class
 			with open(__file__, 'rb') as f:
 				content = f.read().decode('utf-8')
 			mount = 'class SDSetup:\n\t' + \
 					'# whatever is put here (between "class SDSetup:" and the next comment) will be replaced with the mounted config.json\n\t' + \
 					'config_loaded = True\n\t'
-			for key, value in self.config.items():
-				if type(value) is str: value = f"'{value}'"
-				mount += f'{key} = {value}\n\t'
-
+			if config_loaded:
+				x = []
+				for key, value in vars(self).items():
+					x.append((key, value))
+				print()
+				for e in x:
+					print(e)
+				print()
+				for key, value in x[1:]:
+					if type(value) is str:
+						value = f'\'{value}\''
+						mount += f'{key} = {value}\n\t'
+					elif type(value) is int:
+						value = f'{value}'
+						mount += f'{key} = {value}\n\t'
+			else:
+				for key, value in self.config.items():
+					if type(value) is str: value = f"'{value}'"
+					mount += f'{key} = {value}\n\t'
 			i = content.find('class SDSetup:')+len('class SDSetup:')
 			j = content.find('# constants')-1
 			content = content[:i]+'\n'+content[j:]
