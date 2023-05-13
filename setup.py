@@ -126,7 +126,7 @@ class SDSetup:
 
 	def load_cache(self):
 		self.cache = {'updated-sd-repo': False, 'downloaded_models_in_discord_channel': [], 'models_in_civitai_favorites': []}
-		if os.path.exists():
+		if os.path.exists(self.cache_filename):
 			with open(self.cache_filename, 'rb') as f:
 				content = f.read()
 				if content != b'':
@@ -135,7 +135,8 @@ class SDSetup:
 					except:
 						cprint(f'failed to load {self.cache_filename}', RED)
 						exit(1)
-		self.cache['updated-sd-repo'] = self.skip_update_sd_repo
+		if self.skip_update_sd_repo:
+			self.cache['updated-sd-repo'] = True
 
 	def parse_args(self):
 		args_info = [
@@ -228,15 +229,15 @@ class SDSetup:
 			# proceed with the initialization setup
 			self.load_cache()
 			self.wd = os.getcwd()
-			self.running_in_runpod_env = wd == '/workspace/stable-diffusion-webui'
+			self.running_in_runpod_env = self.wd == '/workspace/stable-diffusion-webui'
 			self.discord_headers = {
 				"authorization": self.discord_auth_token
 			}
 			self.models_folder =  {
-				"Checkpoint": f"{wd}/models/Stable-diffusion",
-				"LORA": f"{wd}/models/Lora",
-				"LoCon": f"{wd}/models/LyCORIS",
-				"TextualInversion": f"{wd}/embeddings"
+				"Checkpoint": f"{self.wd}/models/Stable-diffusion",
+				"LORA": f"{self.wd}/models/Lora",
+				"LoCon": f"{self.wd}/models/LyCORIS",
+				"TextualInversion": f"{self.wd}/embeddings"
 			}
 			
 			self.clone_required_repos()
@@ -245,7 +246,7 @@ class SDSetup:
 		# get messages from channel
 		cprint('getting messages...', BLUE)
 		url = f"https://discord.com/api/v9/channels/{self.channel_id}/messages?limit={self.msg_limit}" if self.msg_limit != -1 else f"https://discord.com/api/v9/channels/{self.channel_id}/messages"
-		if wget(url, output_filename='messages', headers=discord_headers):
+		if wget(url, output_filename='messages', headers=self.discord_headers):
 			with open('messages', 'rb') as f:
 				self.messages = json.loads(f.read().decode('utf-8'))
 			return True
@@ -270,7 +271,7 @@ class SDSetup:
 		for j in range(len(attachments)):
 			file_url = attachments[j]['url']
 			file_name = attachments[j]['filename'].strip()
-			dir_path = wd
+			dir_path = self.wd
 			# search for file (supposing there could be only one with this name)
 			full_path = get_path(file_name)
 			cprint(f'\n({self.k}/{self.n})', GREEN)
@@ -349,7 +350,7 @@ class SDSetup:
 	def delete_files(self, attachments):
 		for j in range(len(attachments)):
 			file_name = attachments[j]['filename'].strip()
-			dir_path = wd
+			dir_path = self.wd
 			# search for file
 			full_path = get_path(file_name)
 			if full_path == None:
@@ -426,7 +427,7 @@ class SDSetup:
 		# perform the requested actions
 		for i in range(self.n):
 
-			k += 1
+			self.k += 1
 			SKIP, INSTALL, DELETE = self.parse_reactions(messages[i])
 			
 			# do it this way so that it's easy to implement more than one action on each message later
