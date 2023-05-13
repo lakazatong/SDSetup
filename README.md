@@ -1,6 +1,7 @@
 # SDSetup
 
 Setup your Stable Diffusion web UI repository by looking at files and civitai model links sent in the Discord channel of you choice.
+Disclaimer: for now I use this repo as a way to have it uploaded and online and keep track of the progress, commits are by no means "good commits".
 <!-- 
 ## Requirements
 

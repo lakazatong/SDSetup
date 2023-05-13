@@ -143,7 +143,6 @@ class SDSetup:
 					if arg[1][1:] in sys.argv[i]:
 						self.args[arg[2][2:]] = True
 
-
 	def clone_required_repos(self):
 		# folders safety
 		for folder in ['models', 'extensions', 'embeddings', 'repositories', 'models/Stable-diffusion', 'models/Lora', 'models/LyCORIS']:
@@ -187,8 +186,6 @@ class SDSetup:
 						os.system('rm '+dir_path+'/'+key+'.yaml')
 					else:
 						cprint(f'\ncontrolnet model {key} is already deleted', GREEN)
-
-		
 
 	def mount_config(self):
 		# mount the config.json file into this class
