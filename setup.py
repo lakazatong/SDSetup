@@ -182,7 +182,7 @@ class SDSetup:
 			self.cache['updated-sd-repo'] = True
 
 	def __init__(self):
-		if not config_loaded:
+		if not self.config_loaded:
 			if not self.load_config():
 				exit(1)
 		self.parse_args()
@@ -194,7 +194,7 @@ class SDSetup:
 			mount = 'class SDSetup:\n\t' + \
 					'# whatever is put here (between "class SDSetup:" and the next comment) will be replaced with the mounted config.json\n\t' + \
 					'config_loaded = True\n\t'
-			if config_loaded:
+			if self.config_loaded:
 				x = []
 				for key, value in vars(self).items():
 					x.append((key, value))
