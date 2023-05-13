@@ -351,7 +351,9 @@ class SDSetup:
 						previews = page.xpath('/html/body/div/span/div/div/div/main/div/div/div[3]/div[2]/div/div[1]/div[1]/div/div')
 						# otherwise no preview available :c
 						if len(previews) > 0:
-							wget(previews.xpath('./div/div/div[2]/div/div[1]/img/@src').get(), output_dir=dir_path, output_filename=f'{model_file_name}.preview.png', show_progress=False)
+							# assumes all are .safetensors for now
+							preview_file_name = model_file_name[:len(model_file_name)-len('.safetensors')]
+							wget(previews.xpath('./div/div/div[2]/div/div[1]/img/@src').get(), output_dir=dir_path, output_filename=f'{preview_file_name}.preview.png', show_progress=False)
 			# yes it is
 			else:
 				# get its info
