@@ -15,8 +15,8 @@ except:
 # functions
 
 BLACK, RED, GREEN, YELLOW, BLUE, PURPLE, CYAN, WHITE = 30, 31, 32, 33, 34, 35, 36, 37
-def cprint(string, color_code=30):
-	print(f"\033[{color_code}m{string}\033[0m")
+def cprint(string, color_code=30, end='\n'):
+	print(f"\033[{color_code}m{string}\033[0m", end=end)
 
 def wget(url:str, output_filename:str=None, output_dir:str=None, show_progress:bool=True, quiet:bool=True, auth:tuple[str, str]=None, headers:dict=None, print_cmd:bool=False):
 	output_opt = f'-O "{output_filename}"' if output_filename != None else ''
@@ -213,7 +213,12 @@ class SDSetup:
 			content = content.replace('class SDSetup:', mount, 1)
 			with open(__file__, 'w') as f:
 				f.write(content)
-				cprint('config loaded in setup.py file', GREEN)
+				cprint('\nconfig loaded,\ncopy and paste setup.py in any Stable Diffusion web UI repository and run:', GREEN)
+				cprint('python setup.py\n', PURPLE)
+				cprint('do not forget the -f option if you want it to install models from your civitai favorites', GREEN)
+				cprint('it requires your civitai_api_key in the config.json\n', GREEN)
+				cprint('\nif you want to load a new config, just run this command again:', GREEN)
+				cprint('python setup.py -m\n', PURPLE)
 				exit(0)
 		else:
 			# proceed with the initialization setup
