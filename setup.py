@@ -123,9 +123,7 @@ class SDSetup:
 		if self.skip_update_sd_repo:
 			self.cache['updated-sd-repo'] = True
 
-	def parse_args(self):
-		args_info = self.config['args_info']
-
+	def parse_args(self, args_info=self.args_info):
 		is_long_arg = [False]*(len(sys.argv)-1)
 		for i in range(1, len(sys.argv)):
 			for arg in args_info:
@@ -166,9 +164,10 @@ class SDSetup:
 
 	def __init__(self):
 		if not self.config_loaded:
-			if not self.load_config():
-				exit(1)
-		self.parse_args()
+			if not self.load_config(): exit(1)
+			self.parse_args(arg_info=self.config['args_info'])
+		else:
+			self.parse_args(arg_info=self.arg_info)
 		
 		if self.args['mount']:
 			# mount the config.json file into this class
@@ -179,8 +178,7 @@ class SDSetup:
 					'config_loaded = True\n\t'
 			# load the config since it was already loaded so config.json wasn't loaded this time
 			if self.config_loaded:
-				if not self.load_config():
-					exit(1)
+				if not self.load_config(): exit(1)
 			# extract all key, value pairs of config.json
 			for key, value in self.config.items():
 				if type(value) is str: value = f"'{value}'"
