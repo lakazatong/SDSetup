@@ -176,14 +176,11 @@ class SDSetup:
 						cprint(f'\ncontrolnet model {key} is already installed', GREEN)
 					else:
 						cprint(f'\ndownloading the {key} controlnet model...', GREEN)
-						wget(f'{base_link}/resolve/main/control_v11e_sd15_{key}.pth', output_dir=dir_path, output_filename=key+'.pth')
-					if not os.path.exists(dir_path+'/'+key+'.yaml'):
-						wget(f'{base_link}/raw/main/control_v11p_sd15_{key}.yaml', output_dir=dir_path, output_filename=key+'.yaml', show_progress=False)
+						wget(f'{base_link}/resolve/main/control_v11p_sd15_{key}.pth', output_dir=dir_path, output_filename=key+'.pth')
 				else:
 					if os.path.exists(dir_path+'/'+key+'.pth'):
 						cprint(f'\ndeleting controlnet model {key}... ', GREEN)
 						os.system('rm '+dir_path+'/'+key+'.pth')
-						os.system('rm '+dir_path+'/'+key+'.yaml')
 					else:
 						cprint(f'\ncontrolnet model {key} is already deleted', GREEN)
 
