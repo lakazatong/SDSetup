@@ -307,8 +307,8 @@ class SDSetup:
 				# get its info
 				model_info = json.loads(page.xpath('/html/body/script[1]/text()').get())['props']['pageProps']['trpcState']['json']['queries']
 				model_type = str(model_info[1]['state']['data']['type']).strip()
-				if model_type in models_folder:
-					dir_path = models_folder[model_type]
+				if model_type in self.models_folder:
+					dir_path = self.models_folder[model_type]
 				else:
 					cprint(f'type "{model_type}" is not yet supported', RED)
 					continue
@@ -385,7 +385,7 @@ class SDSetup:
 				# get its info
 				# model_type, model_id, model_name, model_url, model_page_id, model_file_name, model_page_url
 				model_type, _, model_name, _, _, model_file_name, _ = self.cache['downloaded_models_in_discord_channel'][model_index].values()
-				dir_path = models_folder[model_type]
+				dir_path = self.models_folder[model_type]
 				full_path = f'{dir_path}/{model_file_name}'
 				if os.path.exists(full_path):
 					# delete it
@@ -407,7 +407,7 @@ class SDSetup:
 				model_type = model['model_type']
 				model_name = model['model_name']
 				model_file_name = model['model_file_name']
-				dir_path = models_folder[model_type]
+				dir_path = self.models_folder[model_type]
 				full_path = f'{dir_path}/{model_file_name}'
 				if os.path.exists(full_path):
 					cprint(f'deleting {model_name}...', GREEN)
@@ -428,7 +428,7 @@ class SDSetup:
 		for i in range(self.n):
 
 			self.k += 1
-			SKIP, INSTALL, DELETE = self.parse_reactions(messages[i])
+			SKIP, INSTALL, DELETE = self.parse_reactions(self.messages[i])
 			
 			# do it this way so that it's easy to implement more than one action on each message later
 			if SKIP:
@@ -484,8 +484,8 @@ class SDSetup:
 			self.k += 1
 			cprint(f'\n({self.k}/{self.n})', GREEN)
 			model_type = model['type']
-			if model_type in models_folder:
-				dir_path = models_folder[model_type]
+			if model_type in self.models_folder:
+				dir_path = self.models_folder[model_type]
 			else:
 				cprint(f'type "{model_type}" is not yet supported', RED)
 				continue
@@ -547,12 +547,12 @@ class SDSetup:
 
 	def cleanup(self):
 		# hang to let the user read eventual errors
-		if not QUICK: os.system('bash -c "read -p \'\nPress Enter\'"')
+		if not self.args['quick']: os.system('bash -c "read -p \'\nPress Enter\'"')
 		os.system("clear")
 		# cleanup
 		os.system(f'rm -f messages page favorites')
 		# self destroys
-		if SELF_DESTROY: subprocess.Popen('rm setup.py', shell=True)
+		if self.args['self_destroy']: subprocess.Popen('rm setup.py', shell=True)
 
 	def setup(self):
 		self.setup_from_discord_messages()
