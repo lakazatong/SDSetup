@@ -88,7 +88,7 @@ class SDSetup:
 	config_loaded = False
 	
 	# constants
-	separator = None
+	separator = None # must not be changed
 	config_filename = 'config.json'
 	cache_filename = '.setup-cache'
 
@@ -203,7 +203,7 @@ class SDSetup:
 				for e in x:
 					print(e)
 				print()
-				for key, value in x[1:]:
+				for key, value in x[2:]:
 					if key == 'separator' and value == None: break
 					if type(value) is str: value = f'\'{value}\''
 					mount += f'{key} = {value}\n\t'
