@@ -196,7 +196,7 @@ class SDSetup:
 					'config_loaded = True\n\t'
 			if self.config_loaded:
 				x = []
-				for key, value in vars(self).items():
+				for key, value in vars(self.__class__).items():
 					x.append((key, value))
 				print()
 				for e in x:
