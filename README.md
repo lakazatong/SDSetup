@@ -41,6 +41,31 @@ Your Stable Diffusion web UI repository is now setup!
 
 - Do not rename downloaded models, it can cause issues.
 
+## FAQ
+
+- What's 'discord_auth_token' and how can I obtain mine?
+
+Go to https://discord.com/app in your browser, login if not already, open the Developer Tools by pressing f12, go to the Network tab, make sure it is recording traffic by noticing:
+
+on Chrome / Firefox
+
+![Chrome](https://cdn.discordapp.com/attachments/859861167484174369/1106801770556039290/2023-05-13_06-33-23.png)
+![Firefox](https://cdn.discordapp.com/attachments/859861167484174369/1106801770291806248/2023-05-13_06-32-33.png)
+
+Click on any channel from any server, press ctrl+f, enter 'Authorization' in the Search field that opened on the left, you should get something like this:
+
+![Search](https://cdn.discordapp.com/attachments/859861167484174369/1106803436885905419/image.png)
+
+The 'discord_auth_token' you are looking for is in these files, if you click on one you will get redirected to the file, scroll down to Request Headers, it will be highlighted in yellow c:
+
+- What's 'civitai_api_key' and how can I obtain mine?
+
+Go to https://civitai.com/user/account, login, scroll down, in 'API Keys' click 'Add API key', enter the name you want and copy the key you got, that's it c:
+
+- How can I get the ID of a Discord channel?
+
+Right click on the channel and click 'Copy Channel ID' c:
+
 ## TODO
 
 - Add a prompt in case there are multiple files included with the model link (could also just be a VAE, in that case download it without prompting the user).
