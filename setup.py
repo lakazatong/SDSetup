@@ -88,6 +88,7 @@ class SDSetup:
 	config_loaded = False
 	
 	# constants
+	separator = None
 	config_filename = 'config.json'
 	cache_filename = '.setup-cache'
 
@@ -203,12 +204,9 @@ class SDSetup:
 					print(e)
 				print()
 				for key, value in x[1:]:
-					if type(value) is str:
-						value = f'\'{value}\''
-						mount += f'{key} = {value}\n\t'
-					elif type(value) is int:
-						value = f'{value}'
-						mount += f'{key} = {value}\n\t'
+					if key == 'separator' and value == None: break
+					if type(value) is str: value = f'\'{value}\''
+					mount += f'{key} = {value}\n\t'
 			else:
 				for key, value in self.config.items():
 					if type(value) is str: value = f"'{value}'"
