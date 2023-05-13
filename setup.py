@@ -380,7 +380,7 @@ class SDSetup:
 			cprint(f'\n({self.k}/{self.n})', GREEN)
 			# no it is not
 			if model_index == -1:
-				model_info = get_model_info(model_page_url)
+				model_info = self.get_model_info(model_page_url)
 				# there was an issue with getting the model info
 				if model_info == None: continue
 				# otherwise just unpack the model info
