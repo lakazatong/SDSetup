@@ -86,7 +86,7 @@ def load_json_with_comments(content, encoding='utf-8'):
 class SDSetup:
 	# whatever is put here (between "class SDSetup:" and the next comment) will be replaced with the mounted config.json
 	config_loaded = False
-
+	
 	# constants
 	config_filename = 'config.json'
 	cache_filename = '.setup-cache'
@@ -181,16 +181,15 @@ class SDSetup:
 			self.cache['updated-sd-repo'] = True
 
 	def __init__(self):
-		if not self.config_loaded:
-			self.load_config()
 		self.parse_args()
 		
 		if self.args['mount']:
+			self.load_config()
 			# mount the config.json file into this class
 			with open(__file__, 'rb') as f:
 				content = f.read().decode('utf-8')
 			mount = 'class SDSetup:\n\t' + \
-					'whatever is put here (between "class SDSetup:" and the next comment) will be replaced with the mounted config.json\n\t' + \
+					'# whatever is put here (between "class SDSetup:" and the next comment) will be replaced with the mounted config.json\n\t' + \
 					'config_loaded = True\n\t'
 			for key, value in self.config.items():
 				if type(value) is str: value = f"'{value}'"
