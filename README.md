@@ -78,8 +78,6 @@ Right click on the channel and click 'Copy Channel ID' c:
 
 - Cache settings after each txt2img generation in case it crashes and load them after reloading.
 
-- Install controlnet by default (poses by default or user defined? maybe).
-
 - Add previews automatically.
 
 - Close the runpod after ~5 mins and terminate it after ~10 mins of inactivity.

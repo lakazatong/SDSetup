@@ -122,7 +122,7 @@ class SDSetup:
 					except:
 						cprint(f'failed to load {self.cache_filename}', RED)
 						exit(1)
-		if self.skip_update_sd_repo:
+		if self.clone_sd_repo:
 			self.cache['updated-sd-repo'] = True
 
 	def parse_args(self, args_info):
@@ -151,7 +151,7 @@ class SDSetup:
 				os.system('mkdir '+folder)
 		
 		# clone the stablediffusion 2.1 repo
-		if not bool(self.cache['updated-sd-repo']):
+		if self.clone_sd_repo:
 			cprint('\ncloning the stablediffusion ripo...', GREEN)
 			if os.path.exists('repositories/stable-diffusion-stability-ai'):
 				os.system('rm -rf repositories/stable-diffusion-stability-ai')
@@ -160,9 +160,34 @@ class SDSetup:
 			self.cache['updated-sd-repo'] = True
 
 		# clone the lyoris repo
-		if not os.path.exists('extensions/a1111-sd-webui-lycoris'):
+		if self.clone_lycoris_repo and not os.path.exists('extensions/a1111-sd-webui-lycoris'):
 			cprint('\ncloning the lycoris ripo...', GREEN)
 			os.system('cd extensions && git clone https://github.com/KohakuBlueleaf/a1111-sd-webui-lycoris')
+
+		# clone the controlnet repo and models
+		if self.clone_controlnet_repo:
+			if not os.path.exists('extensions/sd-webui-controlnet'):
+				cprint('\ncloning the controlnet ripo...', GREEN)
+				os.system('cd extensions && git clone https://github.com/Mikubill/sd-webui-controlnet')
+			base_link = 'https://huggingface.co/lllyasviel/ControlNet-v1-1'
+			dir_path = 'extensions/sd-webui-controlnet/models'
+			for key, value in self.controlnet_models.items():
+				if value:
+					if os.path.exists(dir_path+'/'+key+'.pth'):
+						cprint(f'\ncontrolnet model {key} is already installed', GREEN)
+					else:
+						cprint(f'\ndownloading the {key} controlnet model...', GREEN)
+						wget(f'{base_link}/resolve/main/control_v11e_sd15_{key}.pth', output_dir=dir_path, output_filename=key+'.pth'):	
+					if not os.path.exists(dir_path+'/'+key+'.yaml'):
+						wget(f'{base_link}/raw/main/control_v11p_sd15_{key}.yaml', output_dir=dir_path, output_filename=key+'.yaml', show_progress=False)
+				else:
+					if os.path.exists(dir_path+'/'+key+'.pth'):
+						cprint(f'\ndeleting controlnet model {key}... ', GREEN)
+						os.system('rm '+dir_path+'/'+key+'.pth')
+						os.system('rm '+dir_path+'/'+key+'.yaml')
+					else:
+						cprint(f'\ncontrolnet model {key} is already deleted', GREEN)
+
 		
 
 	def mount_config(self):

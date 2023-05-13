@@ -12,12 +12,37 @@
 	"show_files_progress_bar": false,
 	"show_models_progress_bar": true,
 
-	/* for debugging in local, should be false
+	/* for debugging in local, should be true
 	IT ALLOWS FOR NSFW RESULTS, it will use the stable diffusion repo, not the one provided by runpod
 	I also have to run the webui with the '--no-half-vae --no-half --precision full' args to never get black images it seems
 	if anyone know why it creates black images when doing nsfw prompts in runpod, mp me at lakazatong#0206
 	(that would not need to clone the entire repo to speed up the setup like I currently do) */
-	"skip_update_sd_repo": false,
+	"clone_sd_repo": true,
+
+	// required for lycoris models from civitai to work 
+	"clone_lycoris_repo": true,
+
+	// see https://github.com/lllyasviel/ControlNet if you don't know what controlnet is
+	"clone_controlnet_repo": true,
+
+	/* controlnet models you want to be installed
+	setup.py will not look at these if clone_controlnet_repo is false*/
+	"controlnet_models": {
+		"ip2p": false,
+		"shuffle": false,
+		"tile": false,
+		"depth": false,
+		"canny": false,
+		"inpaint": false,
+		"lineart": true,
+		"mlsd": false,
+		"normalbae": false,
+		"openpose": true,
+		"scribble": false,
+		"seg": false,
+		"softedge": false,
+		"lineart_anime": true
+	},
 
 	/* default values of command line args, feel free to customize the argument names, they are not set in stone
 	setting one to true means you will not be able to set it to false when running the setup.py lol */
