@@ -124,7 +124,7 @@ class SDSetup:
 			self.cache['updated-sd-repo'] = True
 
 	def parse_args(self):
-		args_info = self.config['arg_info']
+		args_info = self.config['args_info']
 
 		is_long_arg = [False]*(len(sys.argv)-1)
 		for i in range(1, len(sys.argv)):
