@@ -458,7 +458,7 @@ class SDSetup:
 		if not self.get_favorites():
 			cprint('failed to get favorites', RED)
 			return
-		self.k, self.n = 0, favorites['metadata']['totalItems']
+		self.k, self.n = 0, self.favorites['metadata']['totalItems']
 		self.currently_found_model_page_ids = []
 
 		for model in self.favorites['items']:
