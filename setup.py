@@ -132,7 +132,7 @@ class SDSetup:
 		self.cache['updated-sd-repo'] = self.skip_update_sd_repo
 
 	def parse_args(self):
-		self.args_info = [
+		args_info = [
 			[self.SELF_DESTROY, 			self.SELF_DESTROY_SHORT[1:], 			self.SELF_DESTROY_LONG],
 			[self.QUICK, 					self.QUICK_SHORT[1:], 					self.QUICK_LONG],
 			[self.USE_CIVITAI_FAVORITES, 	self.USE_CIVITAI_FAVORITES_SHORT[1:], 	self.USE_CIVITAI_FAVORITES_LONG],
