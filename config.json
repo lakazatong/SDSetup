@@ -22,32 +22,39 @@
 	/* default values of command line args, feel free to customize the argument names, they are not set in stone
 	setting one to true means you will not be able to set it to false when running the setup.py lol */
 
-	// destroy setup.py when it is done
-	"SELF_DESTROY": false,
-	"SELF_DESTROY_SHORT": "-d",
-	"SELF_DESTROY_LONG": "--destroy",
-		
-	// skip the "Press Enter" when it is done
-	"QUICK": false,
-	"QUICK_SHORT": "-q",
-	"QUICK_LONG": "--quick",
-		
-	// also look at models in your civitai favorites (REQUIRES YOUR CIVITAI API KEY)
-	"USE_CIVITAI_FAVORITES": false,
-	"USE_CIVITAI_FAVORITES_SHORT": "-f",
-	"USE_CIVITAI_FAVORITES_LONG": "--favorites",
-
-	/* just mount this config.json file into the setup.py file
-	WARNING: the setup.py file will then contain your discord_auth_token and your civitai_api_key */
-	"MOUNT": false,
-	"MOUNT_SHORT": "-m",
-	"MOUNT_LONG": "--mount"
+	"args_info": [
+		// destroy setup.py when it is done
+		[
+			false,
+			"-d",
+			"--destroy"
+		],
+		// skip the "Press Enter" when it is done
+		[
+			false,
+			"-q",
+			"--quick"
+		],
+		// also look at models in your civitai favorites (REQUIRES YOUR CIVITAI API KEY)
+		[
+			false,
+			"-f",
+			"--favorites"
+		],
+		/* just mount this config.json file into the setup.py file
+		WARNING: the setup.py file will then contain your discord_auth_token and your civitai_api_key */
+		[
+			false,
+			"-m",
+			"--mount"
+		]
+	]
 
 	/* could seek for models and update the cache accordingly, but would not be reliable at all as explained in the README
 	meaning it can say 'model_name is already deleted' but it is not because you installed it manually
 	(because it did not found the model_name in its cache)
 	this option would then do nothing but that, ignoring all other arguments
 	SEEK_FOR_MODELS = False
-	SEEK_FOR_MODELS_SHORT = '-c'
-	SEEK_FOR_MODELS_LONG = '--cache' */
+	SEEK_FOR_MODELS_short = '-c'
+	SEEK_FOR_MODELS_long = '--cache' */
 }

@@ -92,7 +92,6 @@ class SDSetup:
 	config_loaded = False
 	
 	# constants
-	separator = None # must not be changed
 	config_filename = 'config.json'
 	cache_filename = '.setup-cache'
 
@@ -125,17 +124,7 @@ class SDSetup:
 			self.cache['updated-sd-repo'] = True
 
 	def parse_args(self):
-		args_info = [
-			[self.SELF_DESTROY, 			self.SELF_DESTROY_SHORT[1:], 			self.SELF_DESTROY_LONG],
-			[self.QUICK, 					self.QUICK_SHORT[1:], 					self.QUICK_LONG],
-			[self.USE_CIVITAI_FAVORITES, 	self.USE_CIVITAI_FAVORITES_SHORT[1:], 	self.USE_CIVITAI_FAVORITES_LONG],
-			[self.MOUNT, 					self.MOUNT_SHORT[1:], 					self.MOUNT_LONG]
-		] if self.config_loaded else [
-			[self.config['SELF_DESTROY'], 			self.config['SELF_DESTROY_SHORT'][1:], 			self.config['SELF_DESTROY_LONG']],
-			[self.config['QUICK'], 					self.config['QUICK_SHORT'][1:], 				self.config['QUICK_LONG']],
-			[self.config['USE_CIVITAI_FAVORITES'], 	self.config['USE_CIVITAI_FAVORITES_SHORT'][1:], self.config['USE_CIVITAI_FAVORITES_LONG']],
-			[self.config['MOUNT'], 					self.config['MOUNT_SHORT'][1:], 				self.config['MOUNT_LONG']]
-		]
+		args_info = self.config['arg_info']
 
 		is_long_arg = [False]*(len(sys.argv)-1)
 		for i in range(1, len(sys.argv)):
@@ -188,7 +177,7 @@ class SDSetup:
 			mount = 'class SDSetup:\n\t' + \
 					'# whatever is put here (between "class SDSetup:" and the next comment) will be replaced with the mounted config.json\n\t' + \
 					'config_loaded = True\n\t'
-			# config was already loaded, config.json wasn't loaded this time, load it
+			# load the config since it was already loaded so config.json wasn't loaded this time
 			if self.config_loaded:
 				if not self.load_config():
 					exit(1)
