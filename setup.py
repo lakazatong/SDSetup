@@ -167,7 +167,7 @@ class SDSetup:
 			if not self.load_config(): exit(1)
 			self.parse_args(self.config['args_info'])
 		else:
-			self.parse_args(self.arg_info)
+			self.parse_args(self.args_info)
 		
 		if self.args['mount']:
 			# mount the config.json file into this class
