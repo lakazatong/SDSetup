@@ -552,7 +552,7 @@ class SDSetup:
 		# cleanup
 		os.system(f'rm -f messages page favorites')
 		# self destroys
-		if self.args['self_destroy']: subprocess.Popen('rm setup.py', shell=True)
+		if self.args['destroy']: subprocess.Popen('rm setup.py', shell=True)
 
 	def setup(self):
 		self.setup_from_discord_messages()
