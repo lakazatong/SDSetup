@@ -213,6 +213,7 @@ class SDSetup:
 			content = content.replace('class SDSetup:', mount, 1)
 			with open(__file__, 'w') as f:
 				f.write(content)
+				cprint('config loaded in setup.py file', GREEN)
 				exit(0)
 		else:
 			# proceed with the initialization setup
