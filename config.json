@@ -25,6 +25,13 @@
 	// see https://github.com/lllyasviel/ControlNet if you don't know what controlnet is
 	"clone_controlnet_repo": true,
 
+	/* If the civitai model has more than one file, it will install the largest
+	as they tend to not be pruned and with 32 bits of float precision,
+	which is more likely to be the most compatible with any graphic card.
+	If you wish to instead be prompted which one to install, set this to true. 
+	The cache keeps track of only one file, so you will only be able to choose one */
+	"prompt_model_files": false,
+
 	/* controlnet models you want to be installed
 	setup.py will not look at these if clone_controlnet_repo is false*/
 	"controlnet_models": {

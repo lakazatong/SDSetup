@@ -16,7 +16,7 @@ except:
 
 py_exe = os.path.basename(sys.executable)
 
-# functions
+# generic functions
 
 BLACK, RED, GREEN, YELLOW, BLUE, PURPLE, CYAN, WHITE = 30, 31, 32, 33, 34, 35, 36, 37
 def cprint(string, color_code=30, end='\n'):
@@ -85,7 +85,27 @@ def load_json_with_comments(content, encoding='utf-8'):
 	r += content[i]
 	return json.loads(r)
 
-# init
+# functions specific to this script
+
+def build_model_url(model_url, file_type, file_fp, file_size, file_format):
+	# build the url
+	model_url += '?type='+file_type
+	if file_fp != None:
+		model_url += '?type='+file_fp
+	if file_size != None:
+		model_url += '?type='+file_size
+	if file_format != None:
+		model_url += '?type='+file_format
+	return model_url
+
+def get_info_of_chosen_model(chosen_model):
+	file_metadata = chosen_model['metadata']
+	file_type, file_fp, file_size, file_format = chosen_model['type'], file_metadata['fp'], file_metadata['size'], file_metadata['format']
+	build_model_url(model_url, file_type, file_fp, file_size, file_format)
+	model_file_name = chosen_model['name']
+	return model_url, model_file_name
+
+# initialization
 
 class SDSetup:
 	# whatever is put here (between "class SDSetup:" and the next comment) will be replaced with the mounted config.json
@@ -293,6 +313,62 @@ class SDSetup:
 
 			wget(file_url, output_filename=file_name, output_dir=dir_path, show_progress=self.show_files_progress_bar)
 
+	def get_model_info(self, model_page_url):
+		# get its page
+		if not wget(model_page_url, output_filename='page', show_progress=False):
+			return None
+		# parse the page
+		with open('page', 'rb') as f:
+			page = Selector(f.read().decode('utf-8'))
+		# get its info
+		model_info = json.loads(page.xpath('/html/body/script[1]/text()').get())['props']['pageProps']['trpcState']['json']['queries']
+		model_type = str(model_info[1]['state']['data']['type']).strip()
+		if model_type in self.models_folder:
+			dir_path = self.models_folder[model_type]
+		else:
+			cprint(f'type "{model_type}" is not yet supported', RED)
+			return None
+		model_id = str(model_info[1]['state']['data']['modelVersions'][0]['id'])
+		model_name = str(model_info[1]['state']['data']['name']).strip()
+		model_url = 'https://civitai.com/api/download/models/'+model_id
+		model_page_id = str(model_info[1]['state']['data']['modelVersions'][0]['modelId'])
+		# only one file
+		if len(model_info[1]['state']['data']['modelVersions'][0]['files'] == 1):
+			model_file_name = str(model_info[1]['state']['data']['modelVersions'][0]['files'][0]['name']).strip()
+			full_path = f'{dir_path}/{model_file_name}'
+		# more than one file
+		else:
+			model_versions = []
+			for i, file in enumerate(model_info[1]['state']['data']['modelVersions'][0]['files']):
+				# VAEs are needed anyway, no prompt
+				if file['type'] == 'VAE':
+					wget(model_url+'?type=VAE', output_dir=dir_path, output_filename=file['name'], show_progress=False)
+				# whatever it is, store it
+				else:
+					model_versions.append({'model_index': i, 'type': file['type'], 'name': file['name'], 'size': round(file['sizeKB']), 'metadata': {'fp': file['metadata']['fp'], 'size': file['metadata']['size'], 'format': file['metadata']['format']}})
+			# there is only one or more VAE and one model file
+			if len(model_versions) == 1:
+				chosen_model = model_versions[0]
+			# there are more than one model file
+			else:
+				# prompt which one to download
+				if self.prompt_model_files:
+					cprint('there are more than one file for this model, choose one by entering its model_index:', PURPLE)
+					cprint(json.loads(model_versions, indent=3), PURPLE)
+					result = subprocess.run('bash -c \'read -p "" input; echo $input\'', shell=True, capture_output=True, text=True)
+					chosen_model = model_versions[int(result.stdout.strip())]
+				# get the info of the largest one (explained why in config.json)
+				else:
+					chosen_model = model_versions[0]
+					for i in range(1, model_versions):
+						if model_versions[i]['size'] > chosen_model['size']:
+							chosen_model = model_versions[i]
+			model_url, model_file_name = get_info_of_chosen_model(chosen_model)
+			full_path = f'{dir_path}/{model_file_name}'
+		
+		return (model_type, model_id, model_name, model_url, model_page_id, model_file_name, full_path)
+
+
 	def install_models(self, embeds):
 		for j in range(len(embeds)):
 			model_page_url = embeds[j]['url']
@@ -304,26 +380,11 @@ class SDSetup:
 			cprint(f'\n({self.k}/{self.n})', GREEN)
 			# no it is not
 			if model_index == -1:
-				# get its page
-				if not wget(model_page_url, output_filename='page', show_progress=False):
-					continue
-				# parse the page
-				with open('page', 'rb') as f:
-					page = Selector(f.read().decode('utf-8'))
-				# get its info
-				model_info = json.loads(page.xpath('/html/body/script[1]/text()').get())['props']['pageProps']['trpcState']['json']['queries']
-				model_type = str(model_info[1]['state']['data']['type']).strip()
-				if model_type in self.models_folder:
-					dir_path = self.models_folder[model_type]
-				else:
-					cprint(f'type "{model_type}" is not yet supported', RED)
-					continue
-				model_id = str(model_info[1]['state']['data']['modelVersions'][0]['id'])
-				model_name = str(model_info[1]['state']['data']['name']).strip()
-				model_url = 'https://civitai.com/api/download/models/'+model_id
-				model_page_id = str(model_info[1]['state']['data']['modelVersions'][0]['modelId'])
-				model_file_name = str(model_info[1]['state']['data']['modelVersions'][0]['files'][0]['name']).strip()
-				full_path = f'{dir_path}/{model_file_name}'
+				model_info = get_model_info(model_page_url)
+				# there was an issue with getting the model info
+				if model_info == None: continue
+				# otherwise just unpack the model info
+				model_type, model_id, model_name, model_url, model_page_id, model_file_name, full_path = model_info
 				if os.path.exists(full_path):
 					# was downloaded without the help of this script
 					cprint(f'{model_name} is already installed', GREEN)
