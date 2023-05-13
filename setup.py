@@ -85,14 +85,7 @@ def load_json_with_comments(content, encoding='utf-8'):
 
 class SDSetup:
 	# whatever is put here (between "class SDSetup:" and the next comment) will be replaced with the mounted config.json
-	discord_auth_token = 'YOUR_TOKEN'
-	civitai_api_key = 'YOUR_API_KEY'
-	server_id = 0
-	channel_id = 0
-	msg_limit = -1
-	show_files_progress_bar = False
-	show_models_progress_bar = True
-	skip_update_sd_repo = False
+	config_loaded = False
 	
 	# constants
 	config_filename = 'config.json'
@@ -182,14 +175,17 @@ class SDSetup:
 			self.cache['updated-sd-repo'] = True
 
 	def __init__(self):
-		self.load_config()
+		if not self.config_loaded:
+			self.load_config()
 		self.parse_args()
 		
 		if self.args[3]:
 			# mount the config.json file into this class
 			with open(__file__, 'rb') as f:
 				content = f.read().decode('utf-8')
-			mount = f'class SDSetup:\n\t# whatever is put here (between "class SDSetup:" and the next comment) will be replaced with the mounted config.json\n\t'
+			mount = f'class SDSetup:\n\t\
+						# whatever is put here (between "class SDSetup:" and the next comment) will be replaced with the mounted config.json\n\t\
+						config_loaded = True\n\t'
 			for key, value in self.config.items():
 				if key == 'mounting_separator' and value == None: break
 				if type(value) is str: value = f"'{value}'"
