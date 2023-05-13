@@ -34,7 +34,7 @@ def wget(url:str, output_filename:str=None, output_dir:str=None, show_progress:b
 			os.system(f'cd {output_dir} && {cmd}')
 		else:
 			cprint(f'\ncould not wget "{url}" in "{output_dir}" because it does not exists', RED)
-			return
+			return False
 	else:
 		os.system(cmd)
 
@@ -43,8 +43,11 @@ def wget(url:str, output_filename:str=None, output_dir:str=None, show_progress:b
 		with open(full_path, 'rb') as f:
 			if f.read() == b'':
 				cprint(f'\nthis command:\n{cmd}\ndownloaded a file of 0 bytes', RED)
+				return False
 	else:
 		cprint(f'\nthis command:\n{cmd}\nseemed to have failed', RED)
+		return False
+	return True
 
 def get_path(name, directory=None):
 	if directory == None: directory = os.getcwd()
@@ -102,6 +105,8 @@ class SDSetup:
 	cache = {}
 	messages = {}
 	args = []
+	# is used to then compare which models of the cache were not found thus deleting them
+	currently_found_model_page_ids = []
 
 	# used for display
 	k = 0
@@ -218,11 +223,28 @@ class SDSetup:
 		# get messages from channel
 		cprint('getting messages...', BLUE)
 		url = f"https://discord.com/api/v9/channels/{self.channel_id}/messages?limit={self.msg_limit}" if self.msg_limit != -1 else f"https://discord.com/api/v9/channels/{self.channel_id}/messages"
-		wget(url, output_filename='messages', headers=discord_headers)
-		with open('messages', 'rb') as f:
-			self.messages = json.loads(f.read().decode('utf-8'))
+		if wget(url, output_filename='messages', headers=discord_headers):
+			with open('messages', 'rb') as f:
+				self.messages = json.loads(f.read().decode('utf-8'))
+			return True
+		return False
 
-	def install_file(self, attachments):
+	def parse_reactions(self, message):
+		SKIP, INSTALL, DELETE = False, False, False
+		# parse reactions (prioritizes SKIP over DELETE if both reaction are on)
+		if 'reactions' in message:
+			for reaction in message['reactions']:
+				emoji = bytes(reaction['emoji']['name'], 'utf-8')
+				if emoji == b'\xe2\x9d\x8c':
+					SKIP = True
+					break
+				elif emoji == b'\xf0\x9f\x9a\xab':
+					DELETE = True
+		else:
+			INSTALL = True
+		return SKIP, INSTALL, DELETE
+
+	def install_files(self, attachments):
 		for j in range(len(attachments)):
 			file_url = attachments[j]['url']
 			file_name = attachments[j]['filename'].strip()
@@ -240,30 +262,22 @@ class SDSetup:
 				dir_path = os.path.dirname(full_path)
 				if not self.show_files_progress_bar: cprint(f'overwriting {file_name} in {dir_path}...', GREEN)
 
-
-			# # check if file was already downloaded
-			# file_index = find_index(cache['files'], 'full_path', full_path)
-			# # update cache, file might have moved over time
-			# if file_index != -1: cache['files'].pop(file_index)
-			# cache['files'].append( {'full_path': full_path, 'file_name': file_name, 'dir_path': dir_path} )
-
-
 			wget(file_url, output_filename=file_name, output_dir=dir_path, show_progress=self.show_files_progress_bar)
 
-	def install_model(self, embeds):
+	def install_models(self, embeds):
 		for j in range(len(embeds)):
 			model_page_url = embeds[j]['url']
 
 			# check if model page is cached
-			model_index = find_index(cache['downloaded_models_in_discord_channel'], 'model_page_url', model_page_url)
-			if model_index == -1: model_index = find_index(cache['models_in_civitai_favorites'], 'model_page_url', model_page_url)
-
+			model_index = find_index(self.cache['downloaded_models_in_discord_channel'], 'model_page_url', model_page_url)
+			if model_index == -1: model_index = find_index(self.cache['models_in_civitai_favorites'], 'model_page_url', model_page_url)
 
 			cprint(f'\n({self.k}/{self.n})', GREEN)
 			# no it is not
 			if model_index == -1:
 				# get its page
-				wget(model_page_url, output_filename='page', show_progress=False)
+				if not wget(model_page_url, output_filename='page', show_progress=False):
+					continue
 				# parse the page
 				with open('page', 'rb') as f:
 					page = Selector(f.read().decode('utf-8'))
@@ -280,14 +294,6 @@ class SDSetup:
 				model_url = 'https://civitai.com/api/download/models/'+model_id
 				model_page_id = str(model_info[1]['state']['data']['modelVersions'][0]['modelId'])
 				model_file_name = str(model_info[1]['state']['data']['modelVersions'][0]['files'][0]['name']).strip()
-				# add it to cache
-				self.cache['downloaded_models_in_discord_channel'].append({	'model_type': model_type,
-																			'model_id': model_id,
-																			'model_name': model_name,
-																			'model_url': model_url,
-																			'model_page_id': model_page_id,
-																			'model_file_name': model_file_name, 
-																			'model_page_url': model_page_url})
 				full_path = f'{dir_path}/{model_file_name}'
 				if os.path.exists(full_path):
 					# was downloaded without the help of this script
@@ -295,38 +301,113 @@ class SDSetup:
 				else:
 					# download it
 					if not self.show_models_progress_bar: cprint(f'installing {model_name}...', GREEN)
-					wget(model_url, output_dir=dir_path, output_filename=model_file_name, show_progress=self.show_models_progress_bar)
+					if wget(model_url, output_dir=dir_path, output_filename=model_file_name, show_progress=self.show_models_progress_bar):
+						# add it to cache
+						self.cache['downloaded_models_in_discord_channel'].append(
+							{
+								'model_type': model_type,
+
+								'model_id': model_id,
+								'model_url': model_url,
+								'model_name': model_name,
+
+								'model_page_id': model_page_id,
+								'model_page_url': model_page_url,
+								'model_file_name': model_file_name
+							})
 			# yes it is
 			else:
 				# get its info
 				# model_type, model_id, model_name, model_url, model_page_id, model_file_name, model_page_url
-				_, _, model_name, _, model_page_id, _, _ = cache['downloaded_models_in_discord_channel'][model_index].values()
+				_, _, model_name, _, model_page_id, _, _ = self.cache['downloaded_models_in_discord_channel'][model_index].values()
 				cprint(f'{model_name} is already installed', GREEN)
 
-			currently_found_models_page_ids.append(model_page_id)
+			self.currently_found_model_page_ids.append(model_page_id)
 
-	def parse_messages(self):
-		self.messages = self.get_messages()
+	def delete_files(self, attachments):
+		for j in range(len(attachments)):
+			file_name = attachments[j]['filename'].strip()
+			dir_path = wd
+			# search for file
+			full_path = get_path(file_name)
+			if full_path == None:
+				full_path = f'{dir_path}/{file_name}'
+			else:
+				dir_path = os.path.dirname(full_path)
+			cprint(f'\n({self.k}/{self.n})', GREEN)
+			# delete the file
+			if os.path.exists(full_path):
+				cprint(f'deleting {full_path}...', GREEN)
+				os.system(f'rm -f {full_path}')
+			# file not found or was already deleted
+			else:
+				cprint(f'{full_path} is already deleted', GREEN)
+
+	def delete_models(self, embeds):
+		for j in range(len(embeds)):
+			model_page_url = embeds[j]['url']
+
+			# check if model page is cached
+			model_index = find_index(self.cache['downloaded_models_in_discord_channel'], 'model_page_url', model_page_url)
+			if model_index == -1: model_index = find_index(self.cache['models_in_civitai_favorites'], 'model_page_url', model_page_url)
+
+			cprint(f'\n({self.k}/{self.n})', GREEN)
+			# no it is not
+			if model_index == -1:
+				title = embeds[j]['title']
+				model_name = title[:title.index('Stable Diffusion')-3].strip()
+				cprint(f'{model_name} is already deleted', GREEN)
+			# yes it is
+			else:
+				# get its info
+				# model_type, model_id, model_name, model_url, model_page_id, model_file_name, model_page_url
+				model_type, _, model_name, _, _, model_file_name, _ = self.cache['downloaded_models_in_discord_channel'][model_index].values()
+				dir_path = models_folder[model_type]
+				full_path = f'{dir_path}/{model_file_name}'
+				if os.path.exists(full_path):
+					# delete it
+					cprint(f'deleting {model_name}...', GREEN)
+					os.system(f'rm -f {full_path}')
+				else:
+					# was deleted without the help of this script
+					cprint(f'{model_name} is already deleted', GREEN)
+				# remove it from cache
+				self.cache['downloaded_models_in_discord_channel'].pop(model_index)
+
+	def delete_unseen_models(self, source):
+		# delete models that are no longer in the source
+		for model in self.cache[source]:
+			if not model['model_page_id'] in self.currently_found_model_page_ids:
+				self.k += 1
+				cprint(f'\n({self.k}/{self.n})', GREEN)
+				# user removed this model from the source, interprets it as 'delete it'
+				model_type = model['model_type']
+				model_name = model['model_name']
+				model_file_name = model['model_file_name']
+				dir_path = models_folder[model_type]
+				full_path = f'{dir_path}/{model_file_name}'
+				if os.path.exists(full_path):
+					cprint(f'deleting {model_name}...', GREEN)
+					os.system('rm -f '+full_path)
+					# updating cache (cannot use indices since we are iterating over the list itself :c)
+					self.cache[source].remove(model)
+				else:
+					cprint(f'{model_name} is already deleted', GREEN)
+
+	def setup_from_discord_messages(self):
+		if not self.get_messages():
+			cprint('failed to get messages', RED)
+			return
 		self.k, self.n = 0, len(self.messages)
-		currently_found_models_page_ids = []
+		self.currently_found_model_page_ids = []
 
 		# perform the requested actions
 		for i in range(self.n):
 
-			INSTALL, DELETE, SKIP = False, False, False
 			k += 1
-			# parse reactions (prioritizes SKIP over DELETE if both reaction are on)
-			if 'reactions' in self.messages[i]:
-				for reaction in self.messages[i]['reactions']:
-					emoji = bytes(reaction['emoji']['name'], 'utf-8')
-					if emoji == b'\xe2\x9d\x8c':
-						SKIP = True
-						break
-					elif emoji == b'\xf0\x9f\x9a\xab':
-						DELETE = True
-			else:
-				INSTALL = True
-					
+			SKIP, INSTALL, DELETE = self.parse_reactions(messages[i])
+			
+			# do it this way so that it's easy to implement more than one action on each message later
 			if SKIP:
 				# file(s) to skip
 				if self.messages[i]['attachments'] != []:
@@ -339,113 +420,44 @@ class SDSetup:
 						title = self.messages[i]['embeds'][j]['title']
 						skipped_name = title[:title.index('Stable Diffusion')-3].strip()
 						cprint(f'\n({self.k}/{self.n})\nskipping {skipped_name}', GREEN)
+			
 			elif INSTALL:
 				# file(s) to transfer
 				if self.messages[i]['attachments'] != []:
-					self.install_file(self.messages[i]['attachments'])
+					self.install_files(self.messages[i]['attachments'])
 				# model(s) to transfer
 				else:
-					self.install_model(self.messages[i]['embeds'])
+					self.install_models(self.messages[i]['embeds'])
 							
 			elif DELETE:
-				
 				# file.s to delete
 				if self.messages[i]['attachments'] != []:
-					for j in range(len(self.messages[i]['attachments'])):
-						# file_url = self.messages[i]['attachments'][j]['url']
-						file_name = self.messages[i]['attachments'][j]['filename'].strip()
-						dir_path = wd
-						# search for file
-						full_path = get_path(file_name)
-						if full_path == None:
-							full_path = f'{dir_path}/{file_name}'
-						else:
-							dir_path = os.path.dirname(full_path)
-						cprint(f'\n({self.k}/{self.n})', GREEN)
-						# delete the file
-						if os.path.exists(full_path):
-							cprint(f'deleting {full_path}...', GREEN)
-							os.system(f'rm -f {full_path}')
-						# file not found or was already deleted
-						else:
-							cprint(f'{full_path} is already deleted', GREEN)
-						
-						# # update cache
-						# file_index = find_index(cache['files'], 'full_path', full_path)
-						# # remove it from cache
-						# if file_index != -1:
-						# 	cache['files'].pop(file_index)
-				
+					self.delete_files(self.messages[i]['attachments'])
 				# model.s to delete
 				else:
-					for j in range(len(self.messages[i]['embeds'])):
-						model_page_url = self.messages[i]['embeds'][j]['url']
-
-						# check if model page is cached
-						model_index = find_index(cache['downloaded_models_in_discord_channel'], 'model_page_url', model_page_url)
-						if model_index == -1: model_index = find_index(cache['models_in_civitai_favorites'], 'model_page_url', model_page_url)
-
-						cprint(f'\n({self.k}/{self.n})', GREEN)
-						# no it is not
-						if model_index == -1:
-							title = self.messages[i]['embeds'][j]['title']
-							model_name = title[:title.index('Stable Diffusion')-3].strip()
-							cprint(f'{model_name} is already deleted', GREEN)
-						# yes it is
-						else:
-							# get its info
-							model_type, _, model_name, _, _, model_file_name, _ = cache['downloaded_models_in_discord_channel'][model_index].values()
-							dir_path = models_folder[model_type]
-							full_path = f'{dir_path}/{model_file_name}'
-							if os.path.exists(full_path):
-								# delete it
-								cprint(f'deleting {model_name}...', GREEN)
-								os.system(f'rm -f {full_path}')
-							else:
-								# was deleted without the help of this script
-								cprint(f'{model_name} is already deleted', GREEN)
-							# remove it from cache
-							cache['downloaded_models_in_discord_channel'].pop(model_index)
-
+					self.delete_models(self.messages[i]['embeds'])
 
 			else:
 				cprint("\n???", RED)
 
-		# delete models that are no longer in the discord channel
-		for model in cache['downloaded_models_in_discord_channel']:
-			if not model['model_page_id'] in currently_found_models_page_ids:
-				self.k += 1
-				cprint(f'\n({self.k}/{self.n})', GREEN)
-				# user removed this model from the discord channel, interprets it as 'delete it'
-				model_type = model['model_type']
-				model_name = model['model_name']
-				model_file_name = model['model_file_name']
-				dir_path = models_folder[model_type]
-				full_path = f'{dir_path}/{model_file_name}'
-				if os.path.exists(full_path):
-					cprint(f'deleting {model_name}...', GREEN)
-					os.system('rm -f '+full_path)
-					# updating cache (cannot use indices since we are iterating over the list itself :c)
-					cache['models_in_civitai_favorites'].remove(model)
-				else:
-					cprint(f'{model_name} is already deleted', GREEN)
+		self.delete_unseen_models('downloaded_models_in_discord_channel')
 
-'''
-try:
-
-	
-	
-
-	if USE_CIVITAI_FAVORITES:
-
+	def get_favorites(self):
 		cprint('\ngetting favorites...', BLUE)
-		wget(f'https://civitai.com/api/v1/models?favorites=true&token={self.civitai_api_key}', output_filename='favorites')
-		with open('favorites', 'rb') as f:
-			favorites = json.loads(f.read().decode('utf-8'))
+		if wget(f'https://civitai.com/api/v1/models?favorites=true&token={self.civitai_api_key}', output_filename='favorites'):
+			with open('favorites', 'rb') as f:
+				self.favorites = json.loads(f.read().decode('utf-8'))
+			return True
+		return False
 
+	def setup_from_civitai_favorites(self):
+		if not self.get_favorites():
+			cprint('failed to get favorites', RED)
+			return
 		self.k, self.n = 0, favorites['metadata']['totalItems']
-		favorites = favorites['items']
-		for model in favorites:
+		self.currently_found_model_page_ids = []
+
+		for model in self.favorites['items']:
 			self.k += 1
 			cprint(f'\n({self.k}/{self.n})', GREEN)
 			model_type = model['type']
@@ -456,83 +468,84 @@ try:
 				continue
 			# check if model page is cached
 			model_page_id = str(model['modelVersions'][0]['modelId'])
-			model_index = find_index(cache['models_in_civitai_favorites'], 'model_page_id', model_page_id)
-			if model_index == -1: model_index = find_index(cache['downloaded_models_in_discord_channel'], 'model_page_id', model_page_id)
+			model_index = find_index(self.cache['models_in_civitai_favorites'], 'model_page_id', model_page_id)
+			if model_index == -1: model_index = find_index(self.cache['downloaded_models_in_discord_channel'], 'model_page_id', model_page_id)
 			model_name = model['name']
 
+			# yes it is
+			if model_index != -1:
+				cprint(f'{model_name} is already installed', GREEN)
 			# no it is not
-			if model_index == -1:
+			else:
 				# get its info
 				model_id = str(model['modelVersions'][0]['id'])
 				model_url = 'https://civitai.com/api/download/models/'+model_id
 				model_file_name = model['modelVersions'][0]['files'][0]['name']
 				model_page_url = f'https://civitai.com/models/'+model_page_id
-				# add it to cache
-				cache['models_in_civitai_favorites'].append({'model_type': model_type, 'model_id': model_id, 'model_name': model_name, 'model_url': model_url, 'model_page_id': model_page_id, 'model_file_name': model_file_name,  'model_page_url': model_page_url})
 				# download it
 				if not self.show_models_progress_bar: cprint(f'installing {model_name}...', GREEN)
-				wget(model_url, output_dir=dir_path, output_filename=model_file_name, show_progress=self.show_models_progress_bar)
-			# yes it is
-			else:
-				cprint(f'{model_name} is already installed', GREEN)
+				if wget(model_url, output_dir=dir_path, output_filename=model_file_name, show_progress=self.show_models_progress_bar):
+					# add it to cache
+					self.cache['models_in_civitai_favorites'].append(
+							{
+								'model_type': model_type,
+
+								'model_id': model_id,
+								'model_url': model_url,
+								'model_name': model_name,
+
+								'model_page_id': model_page_id,
+								'model_page_url': model_page_url,
+								'model_file_name': model_file_name
+							})
 			
-			currently_found_models_page_ids.append(model_page_id)
+			self.currently_found_model_page_ids.append(model_page_id)
 		
-		# delete models that are no longer in civitai favorites
-		for model in cache['models_in_civitai_favorites']:
-			if not model['model_page_id'] in currently_found_models_page_ids:
-				self.k += 1
-				cprint(f'\n({self.k}/{self.n})', GREEN)
-				# user removed this model from its favorites, interprets it as 'delete it'
-				model_type = model['model_type']
-				model_name = model['model_name']
-				model_file_name = model['model_file_name']
-				dir_path = models_folder[model_type]
-				full_path = f'{dir_path}/{model_file_name}'
-				if os.path.exists(full_path):
-					cprint(f'deleting {model_name}...', GREEN)
-					os.system('rm -f '+full_path)
-					# updating cache (cannot use indices since we are iterating over the list itself :c)
-					cache['models_in_civitai_favorites'].remove(model)
-				else:
-					cprint(f'{model_name} is already deleted', GREEN)
+		self.delete_unseen_models('models_in_civitai_favorites')
 
-	# save cache
-	with open('.setup-cache', 'w+') as f:
-		json.dump(cache, f, indent=3)
-	# for convenience
-	# bashrc_path = '/root/.bashrc' if running_in_runpod_env else '~/.bashrc'
-	bashrc_path = '/root/.bashrc' if running_in_runpod_env else get_path('.bashrc', directory='/')
-	if bashrc_path != None:
-		with open(bashrc_path, 'r') as f:
-			bashrc_content = f.read()
-		# bashrc_content = subprocess.check_output("cat ~/.bashrc", shell=True).decode('utf-8')
-		if bashrc_content[-(len('alias r="python relauncher.py"')+1):].strip() != 'alias r="python relauncher.py"':
-			os.system(f"echo 'alias r=\"python relauncher.py\"' >> {bashrc_path}")
-		# done
-		cprint('\nrun the r command to run the relauncher.py script', PURPLE)
-	else:
-		cprint('\ncould not find the .bashrc file', RED)
-	cprint('\nAll done', BLUE)
-	if not QUICK: os.system('bash -c "read -p \'\nPress Enter\'"')
-	os.system("clear")
-	# cleanup
-	os.system(f'rm -f messages page favorites')
-	# self destroys
-	if SELF_DESTROY: subprocess.Popen('rm setup.py', shell=True)
-	# reload terminal (to reload ~/.bashrc)
-	os.system("exec bash")
+	def save_cahe(self):
+		# save cache
+		with open('.setup-cache', 'w+') as f:
+			json.dump(self.cache, f, indent=3)
 
-except Exception as e:
-	os.system(f'rm -f messages page favorites')
-	os.system(f"echo {e}")
-'''
+	def set_relauncher_alias(self):
+		# for convenience
+		bashrc_path = '/root/.bashrc' if self.running_in_runpod_env else get_path('.bashrc', directory='/')
+		if bashrc_path != None:
+			with open(bashrc_path, 'r') as f:
+				bashrc_content = f.read()
+			if 'alias r="python relauncher.py"' not in bashrc_content:
+			# if bashrc_content.split('\n')[-1].strip() != 'alias r="python relauncher.py"':
+			# if bashrc_content[-(len('alias r="python relauncher.py"')+1):].strip() != 'alias r="python relauncher.py"':
+				os.system(f"echo 'alias r=\"python relauncher.py\"' >> {bashrc_path}")
+			cprint('\nrun the r command to run the relauncher.py script', PURPLE)
+		else:
+			cprint('\ncould not find the .bashrc file', RED)
+
+	def cleanup(self):
+		# hang to let the user read eventual errors
+		if not QUICK: os.system('bash -c "read -p \'\nPress Enter\'"')
+		os.system("clear")
+		# cleanup
+		os.system(f'rm -f messages page favorites')
+		# self destroys
+		if SELF_DESTROY: subprocess.Popen('rm setup.py', shell=True)
+
+	def setup(self):
+		self.setup_from_discord_messages()
+		if args[2]: self.setup_from_civitai_favorites()
+		self.save_cahe()
+		self.set_relauncher_alias()
+		cprint('\nAll done', BLUE)
+		self.cleanup()
+		# reload terminal (to reload ~/.bashrc)
+		# will lose the commands history :c
+		os.system("exec bash")
 
 def main():
 	sdsetup = SDSetup()
 	os.system("clear")
-	# ...
-	
+	sdsetup.setup()
 
 if __name__ == '__main__':
 	main()
