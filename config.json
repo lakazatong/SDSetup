@@ -23,8 +23,8 @@
 	SHOULD NOT BE CHANGED */
 	"mounting_separator": null,
 
-	/* default values of command line args (example command at the top of the README)
-	setting one of them to true means you will not be able to set them to false when running the setup.py lol */
+	/* default values of command line args, feel free to customize the argument names, they are not set in stone
+	setting one to true means you will not be able to set it to false when running the setup.py lol */
 
 	// destroy setup.py when it is done
 	"SELF_DESTROY": false,
