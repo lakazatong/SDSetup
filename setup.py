@@ -199,10 +199,6 @@ class SDSetup:
 				x = []
 				for key, value in vars(self.__class__).items():
 					x.append((key, value))
-				print()
-				for e in x:
-					print(e)
-				print()
 				for key, value in x[2:]:
 					if key == 'separator' and value == None: break
 					if type(value) is str: value = f'\'{value}\''
