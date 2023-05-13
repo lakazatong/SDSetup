@@ -124,22 +124,23 @@ class SDSetup:
 			self.cache['updated-sd-repo'] = True
 
 	def parse_args(self, args_info):
+		self.args = {}
+		for i, arg_info in enumerate(args_info):
+			self.args[arg_info[2][2:]] = args_info[i][0]
+
 		is_long_arg = [False]*(len(sys.argv)-1)
 		for i in range(1, len(sys.argv)):
 			for arg in args_info:
 				if sys.argv[i] == arg[2]:
-					arg[0] = True
+					self.args[arg[2][2:]] = True
 					is_long_arg[i-1] = True
 					break
 		for i in range(1, len(sys.argv)):
 			if not is_long_arg[i-1]:
 				for arg in args_info:
-					if arg[1] in sys.argv[i]:
-						arg[0] = True
+					if arg[1][1:] in sys.argv[i]:
+						self.args[arg[2][2:]] = True
 
-		self.args = {}
-		for i, arg_info in enumerate(args_info):
-			self.args[arg_info[2][2:]] = args_info[i][0]
 
 	def clone_required_repos(self):
 		# folders safety
