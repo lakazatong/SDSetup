@@ -218,7 +218,7 @@ class SDSetup:
 			with open(__file__, 'w') as f:
 				f.write(content)
 				cprint('\nconfig loaded\ncopy and paste setup.py in any Stable Diffusion web UI repository and run:', GREEN)
-				cprint(f'{py_exe} setup.py\n', PURPLE)
+				cprint(f'python setup.py\n', PURPLE)
 				cprint('do not forget the -f option if you want it to install models from your civitai favorites', GREEN)
 				cprint('it requires your civitai_api_key in the config.json\n', GREEN)
 				cprint('if you want to load a new config, just run this command again:', GREEN)
