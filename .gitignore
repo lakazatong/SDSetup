@@ -1,4 +1,4 @@
 test/
 test.*
-config.json
+# config.json
 .setup-cache
