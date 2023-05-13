@@ -137,7 +137,7 @@ class SDSetup:
 			[self.QUICK, 					self.QUICK_SHORT[1:], 					self.QUICK_LONG],
 			[self.USE_CIVITAI_FAVORITES, 	self.USE_CIVITAI_FAVORITES_SHORT[1:], 	self.USE_CIVITAI_FAVORITES_LONG],
 			[self.MOUNT, 					self.MOUNT_SHORT[1:], 					self.MOUNT_LONG]
-		] if config_loaded else [
+		] if self.config_loaded else [
 			[self.config['SELF_DESTROY'], 			self.config['SELF_DESTROY_SHORT'][1:], 			self.config['SELF_DESTROY_LONG']],
 			[self.config['QUICK'], 					self.config['QUICK_SHORT'][1:], 				self.config['QUICK_LONG']],
 			[self.config['USE_CIVITAI_FAVORITES'], 	self.config['USE_CIVITAI_FAVORITES_SHORT'][1:], self.config['USE_CIVITAI_FAVORITES_LONG']],
