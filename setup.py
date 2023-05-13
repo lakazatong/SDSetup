@@ -86,7 +86,7 @@ def load_json_with_comments(content, encoding='utf-8'):
 class SDSetup:
 	# whatever is put here (between "class SDSetup:" and the next comment) will be replaced with the mounted config.json
 	config_loaded = False
-	
+
 	# constants
 	config_filename = 'config.json'
 	cache_filename = '.setup-cache'
@@ -133,10 +133,10 @@ class SDSetup:
 
 	def parse_args(self):
 		args_info = [
-			[self.config['SELF_DESTROY'], self.config['SELF_DESTROY_SHORT'][1:], self.config['SELF_DESTROY_LONG']],
-			[self.config['QUICK'], self.config['QUICK_SHORT'][1:], self.config['QUICK_LONG']],
-			[self.config['USE_CIVITAI_FAVORITES'], self.config['USE_CIVITAI_FAVORITES_SHORT'][1:], self.config['USE_CIVITAI_FAVORITES_LONG']],
-			[self.config['MOUNT'], self.config['MOUNT_SHORT'][1:], self.config['MOUNT_LONG']],
+			[self.SELF_DESTROY, 			self.SELF_DESTROY_SHORT[1:], 			self.SELF_DESTROY_LONG],
+			[self.QUICK, 					self.QUICK_SHORT[1:], 					self.QUICK_LONG],
+			[self.USE_CIVITAI_FAVORITES, 	self.USE_CIVITAI_FAVORITES_SHORT[1:], 	self.USE_CIVITAI_FAVORITES_LONG],
+			[self.MOUNT, 					self.MOUNT_SHORT[1:], 					self.MOUNT_LONG],
 		]
 
 		is_long_arg = [False]*(len(sys.argv)-1)
@@ -183,11 +183,10 @@ class SDSetup:
 			# mount the config.json file into this class
 			with open(__file__, 'rb') as f:
 				content = f.read().decode('utf-8')
-			mount = f'class SDSetup:\n\t\
-						# whatever is put here (between "class SDSetup:" and the next comment) will be replaced with the mounted config.json\n\t\
-						config_loaded = True\n\t'
+			mount = 'class SDSetup:\n\t' + \
+					'whatever is put here (between "class SDSetup:" and the next comment) will be replaced with the mounted config.json\n\t' + \
+					'config_loaded = True\n\t'
 			for key, value in self.config.items():
-				if key == 'mounting_separator' and value == None: break
 				if type(value) is str: value = f"'{value}'"
 				mount += f'{key} = {value}\n\t'
 
