@@ -97,7 +97,7 @@ class SDSetup:
 	models_folder = {}
 	cache = {}
 	messages = {}
-	args = []
+	args = {}
 	# is used to then compare which models of the cache were not found thus deleting them
 	currently_found_model_page_ids = []
 
@@ -132,11 +132,16 @@ class SDSetup:
 		self.cache['updated-sd-repo'] = self.skip_update_sd_repo
 
 	def parse_args(self):
-		args_info = [
+		self.args_info = [
 			[self.SELF_DESTROY, 			self.SELF_DESTROY_SHORT[1:], 			self.SELF_DESTROY_LONG],
 			[self.QUICK, 					self.QUICK_SHORT[1:], 					self.QUICK_LONG],
 			[self.USE_CIVITAI_FAVORITES, 	self.USE_CIVITAI_FAVORITES_SHORT[1:], 	self.USE_CIVITAI_FAVORITES_LONG],
-			[self.MOUNT, 					self.MOUNT_SHORT[1:], 					self.MOUNT_LONG],
+			[self.MOUNT, 					self.MOUNT_SHORT[1:], 					self.MOUNT_LONG]
+		] if config_loaded else [
+			[self.config['SELF_DESTROY'], 			self.config['SELF_DESTROY_SHORT'][1:], 			self.config['SELF_DESTROY_LONG']],
+			[self.config['QUICK'], 					self.config['QUICK_SHORT'][1:], 				self.config['QUICK_LONG']],
+			[self.config['USE_CIVITAI_FAVORITES'], 	self.config['USE_CIVITAI_FAVORITES_SHORT'][1:], self.config['USE_CIVITAI_FAVORITES_LONG']],
+			[self.config['MOUNT'], 					self.config['MOUNT_SHORT'][1:], 				self.config['MOUNT_LONG']]
 		]
 
 		is_long_arg = [False]*(len(sys.argv)-1)
@@ -152,7 +157,8 @@ class SDSetup:
 					if arg[1] in sys.argv[i]:
 						arg[0] = True
 
-		self.args = [args_info[i][0] for i in range(len(args_info))]
+		for i, arg_info in enumerate(args_info):
+			self.args[arg_info[2][2:]] = args_info[i][0]
 
 	def clone_required_repos(self):
 		# folders safety
