@@ -35,7 +35,7 @@ def wget(url:str, output_filename:str=None, output_dir:str=None, show_progress:b
 	
 	if output_dir != None:
 		if os.path.exists(output_dir):
-			os.system(f'cd {output_dir} && {cmd}')
+			os.system(f'cd "{output_dir}" && {cmd}')
 		else:
 			cprint(f'\ncould not wget "{url}" in "{output_dir}" because it does not exists', RED)
 			return False
@@ -176,7 +176,7 @@ class SDSetup:
 						cprint(f'\ncontrolnet model {key} is already installed', GREEN)
 					else:
 						cprint(f'\ndownloading the {key} controlnet model...', GREEN)
-						wget(f'{base_link}/resolve/main/control_v11e_sd15_{key}.pth', output_dir=dir_path, output_filename=key+'.pth'):	
+						wget(f'{base_link}/resolve/main/control_v11e_sd15_{key}.pth', output_dir=dir_path, output_filename=key+'.pth')
 					if not os.path.exists(dir_path+'/'+key+'.yaml'):
 						wget(f'{base_link}/raw/main/control_v11p_sd15_{key}.yaml', output_dir=dir_path, output_filename=key+'.yaml', show_progress=False)
 				else:
@@ -347,6 +347,11 @@ class SDSetup:
 								'model_page_url': model_page_url,
 								'model_file_name': model_file_name
 							})
+						# download its preview image
+						previews = page.xpath('/html/body/div/span/div/div/div/main/div/div/div[3]/div[2]/div/div[1]/div[1]/div/div')
+						# otherwise no preview available :c
+						if len(previews) > 0:
+							wget(previews.xpath('./div/div/div[2]/div/div[1]/img/@src').get(), output_dir=dir_path, output_filename=f'{model_file_name}.preview.png', show_progress=False)
 			# yes it is
 			else:
 				# get its info
