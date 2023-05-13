@@ -200,31 +200,30 @@ class SDSetup:
 			mount = 'class SDSetup:\n\t' + \
 					'# whatever is put here (between "class SDSetup:" and the next comment) will be replaced with the mounted config.json\n\t' + \
 					'config_loaded = True\n\t'
+			# config was already loaded, config.json wasn't loaded this time, load it
 			if self.config_loaded:
-				x = []
-				for key, value in vars(self.__class__).items():
-					x.append((key, value))
-				for key, value in x[2:]:
-					if key == 'separator' and value == None: break
-					if type(value) is str: value = f'\'{value}\''
-					mount += f'{key} = {value}\n\t'
-			else:
-				for key, value in self.config.items():
-					if type(value) is str: value = f"'{value}'"
-					mount += f'{key} = {value}\n\t'
+				if not self.load_config():
+					exit(1)
+			# extract all key, value pairs of config.json
+			for key, value in self.config.items():
+				if type(value) is str: value = f"'{value}'"
+				mount += f'{key} = {value}\n\t'
+			# clear
 			i = content.find('class SDSetup:')+len('class SDSetup:')
 			j = content.find('# constants')-1
 			content = content[:i]+'\n'+content[j:]
+			# replace
 			content = content.replace('class SDSetup:', mount, 1)
+			# write
 			with open(__file__, 'w') as f:
 				f.write(content)
-				cprint('\nconfig loaded\ncopy and paste setup.py in any Stable Diffusion web UI repository and run:', GREEN)
-				cprint(f'python setup.py\n', PURPLE)
-				cprint('do not forget the -f option if you want it to install models from your civitai favorites', GREEN)
-				cprint('it requires your civitai_api_key in the config.json\n', GREEN)
-				cprint('if you want to load a new config, just run this command again:', GREEN)
-				cprint(f'{py_exe} setup.py -m\n', PURPLE)
-				exit(0)
+			cprint('\nconfig loaded\ncopy and paste setup.py in any Stable Diffusion web UI repository and run:', GREEN)
+			cprint(f'python setup.py\n', PURPLE)
+			cprint('do not forget the -f option if you want it to install models from your civitai favorites', GREEN)
+			cprint('it requires your civitai_api_key in the config.json\n', GREEN)
+			cprint('if you want to load a new config, just run this command again:', GREEN)
+			cprint(f'{py_exe} setup.py -m\n', PURPLE)
+			exit(0)
 		else:
 			# proceed with the initialization setup
 			self.load_cache()
