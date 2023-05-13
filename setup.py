@@ -185,7 +185,7 @@ class SDSetup:
 			self.load_config()
 		self.parse_args()
 		
-		if self.args[3]:
+		if self.args['mount']:
 			# mount the config.json file into this class
 			with open(__file__, 'rb') as f:
 				content = f.read().decode('utf-8')
@@ -534,7 +534,7 @@ class SDSetup:
 
 	def setup(self):
 		self.setup_from_discord_messages()
-		if args[2]: self.setup_from_civitai_favorites()
+		if self.args['favorites']: self.setup_from_civitai_favorites()
 		self.save_cahe()
 		self.set_relauncher_alias()
 		cprint('\nAll done', BLUE)
