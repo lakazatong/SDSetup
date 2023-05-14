@@ -389,22 +389,26 @@ class SDSetup:
 				if os.path.exists(full_path):
 					# was downloaded without the help of this script
 					cprint(f'{model_name} is already installed', GREEN)
+					# add it to cache
+					self.cache['downloaded_models_in_discord_channel'].append({
+						'model_type': model_type,
+						'model_id': model_id,
+						'model_url': model_url,
+						'model_name': model_name,
+						'model_page_id': model_page_id,
+						'model_page_url': model_page_url})
 				else:
 					# download it
 					if not self.show_models_progress_bar: cprint(f'installing {model_name}...', GREEN)
 					if wget(model_url, output_dir=dir_path, output_filename=model_name+'.safetensors', show_progress=self.show_models_progress_bar):
 						# add it to cache
-						self.cache['downloaded_models_in_discord_channel'].append(
-							{
-								'model_type': model_type,
-
-								'model_id': model_id,
-								'model_url': model_url,
-								'model_name': model_name,
-
-								'model_page_id': model_page_id,
-								'model_page_url': model_page_url
-							})
+						self.cache['downloaded_models_in_discord_channel'].append({
+							'model_type': model_type,
+							'model_id': model_id,
+							'model_url': model_url,
+							'model_name': model_name,
+							'model_page_id': model_page_id,
+							'model_page_url': model_page_url})
 						# download its preview image
 						if len(previews) > 0:
 							# assumes all are .safetensors for now
@@ -578,17 +582,13 @@ class SDSetup:
 				if not self.show_models_progress_bar: cprint(f'installing {model_name}...', GREEN)
 				if wget(model_url, output_dir=dir_path, output_filename=model_name+'.safetensors', show_progress=self.show_models_progress_bar):
 					# add it to cache
-					self.cache['models_in_civitai_favorites'].append(
-							{
-								'model_type': model_type,
-
-								'model_id': model_id,
-								'model_url': model_url,
-								'model_name': model_name,
-
-								'model_page_id': model_page_id,
-								'model_page_url': model_page_ur
-							})
+					self.cache['models_in_civitai_favorites'].append({
+						'model_type': model_type,
+						'model_id': model_id,
+						'model_url': model_url,
+						'model_name': model_name,
+						'model_page_id': model_page_id,
+						'model_page_url': model_page_url})
 			
 			self.currently_found_model_page_ids.append(model_page_id)
 		
