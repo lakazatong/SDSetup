@@ -328,7 +328,7 @@ class SDSetup:
 			cprint(f'type "{model_type}" is not yet supported', RED)
 			return None
 		model_id = str(model_info[1]['state']['data']['modelVersions'][0]['id'])
-		model_name = str(model_info[1]['state']['data']['name']).strip()
+		model_name = str(model_info[1]['state']['data']['name']).strip().replace(' ', '_')
 		model_url = 'https://civitai.com/api/download/models/'+model_id
 		model_page_id = str(model_info[1]['state']['data']['modelVersions'][0]['modelId'])
 		# only one file
@@ -453,7 +453,7 @@ class SDSetup:
 			# no it is not
 			if model_index == -1:
 				title = embeds[j]['title']
-				model_name = title[:title.index('Stable Diffusion')-3].strip()
+				model_name = title[:title.index('Stable Diffusion')-3].strip().replace(' ', '_')
 				cprint(f'{model_name} is already deleted', GREEN)
 			# yes it is
 			else:
@@ -541,7 +541,7 @@ class SDSetup:
 
 	def get_favorites(self):
 		cprint('\ngetting favorites...', BLUE)
-		if wget(f'https://civitai.com/api/v1/models?favorites=true', headers=self.civitai_headers, output_filename='favorites'):
+		if wget('https://civitai.com/api/v1/models?favorites=true', headers=self.civitai_headers, output_filename='favorites'):
 			with open('favorites', 'rb') as f:
 				self.favorites = json.loads(f.read().decode('utf-8'))
 			return True
@@ -567,7 +567,7 @@ class SDSetup:
 			model_page_id = str(model['modelVersions'][0]['modelId'])
 			model_index = find_index(self.cache['models_in_civitai_favorites'], 'model_page_id', model_page_id)
 			if model_index == -1: model_index = find_index(self.cache['downloaded_models_in_discord_channel'], 'model_page_id', model_page_id)
-			model_name = model['name']
+			model_name = model['name'].replace(' ', '_')
 
 			# yes it is
 			if model_index != -1:
