@@ -180,7 +180,7 @@ class SDSetup:
 				os.system('mkdir '+folder)
 		
 		# clone the stablediffusion 2.1 repo
-		if self.clone_sd_repo and not self.cache['updated-sd-repo']::
+		if self.clone_sd_repo and not self.cache['updated-sd-repo']:
 			cprint('\ncloning the stablediffusion ripo...', GREEN)
 			if os.path.exists('repositories/stable-diffusion-stability-ai'):
 				os.system('rm -rf repositories/stable-diffusion-stability-ai')
