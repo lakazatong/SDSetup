@@ -9,7 +9,8 @@ import json
 try:
 	from parsel import Selector
 except:
-	os.system("pip install parsel")
+	os.system('pip install --upgrade pip')
+	os.system('pip install parsel')
 	from parsel import Selector
 
 # python executable
@@ -42,6 +43,8 @@ def wget(url:str, output_filename:str=None, output_dir:str=None, show_progress:b
 	else:
 		os.system(cmd)
 
+	if output_filename == None:
+		output_filename = max(os.listdir(), key=os.path.getmtime)
 	full_path = f'{output_dir}/{output_filename}' if output_dir != None else output_filename
 	if os.path.exists(full_path):
 		with open(full_path, 'rb') as f:
@@ -280,6 +283,7 @@ class SDSetup:
 		else:
 			cprint(f'this setup.py has not been mounted with a config\nrun \'{py_exe} setup.py -m\' to do so', RED)
 			exit(1)
+		if not self.args['quick']: os.system('bash -c "read -p \'\nInitialization done, Press Enter\'"')
 
 	def get_messages(self):
 		# get messages from channel
