@@ -1,4 +1,4 @@
-import os, time
+import sys, os, time
 
 if sys.platform.startswith('win'):
 	ext = 'bat'
