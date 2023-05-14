@@ -113,7 +113,7 @@ class SDSetup:
 	# config separator comment (do not modify this comment lol)
 	
 	# constants
-	config_filename = 'config.json'
+	config_filename = 'setup-config.json'
 	cache_filename = '.setup-cache'
 
 	def load_config(self):
