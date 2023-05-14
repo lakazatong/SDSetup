@@ -3,7 +3,7 @@ import sys, os, time
 if sys.platform.startswith('win'):
 	launch_string = 'webui-user.bat'
 else:
-	launch_string = 'webui.sh -f'
+	launch_string = './webui.sh -f'
 
 n = 0
 while True:
