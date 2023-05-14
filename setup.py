@@ -243,7 +243,7 @@ class SDSetup:
 		
 		if self.args['mount']:
 			self.mount_config()
-		else:
+		elif self.config_loaded:
 			# proceed with the initialization setup
 			self.load_cache()
 			self.wd = os.getcwd()
@@ -266,6 +266,9 @@ class SDSetup:
 				"TextualInversion": f"{self.wd}/embeddings"
 			}
 			self.clone_required_repos()
+		else:
+			cprint(f'this setup.py has not been mounted with a config,\nrun \'{py_exe} setup.py -m\' to do so', RED)
+			exit(1)
 
 	def get_messages(self):
 		# get messages from channel
@@ -369,7 +372,9 @@ class SDSetup:
 		previews = page.xpath('/html/body/div/span/div/div/div/main/div/div/div[3]/div[2]/div/div[1]/div[1]/div/div')
 		# download its preview image
 		if len(previews) > 0:
-			wget(previews.xpath('./div/div/div[2]/div/div[1]/img/@src').get(), output_dir=dir_path, output_filename=f'{model_name}.preview.png', show_progress=False)
+			preview_full_path = f'{dir_path}/{model_name}.preview.png'
+			if not os.path.exists(preview_full_path):
+				wget(previews.xpath('./div/div/div[2]/div/div[1]/img/@src').get(), output_dir=dir_path, output_filename=f'{model_name}.preview.png', show_progress=False)
 		return (model_type, model_id, model_name, model_url, model_page_id, dir_path, full_path)
 
 
