@@ -191,15 +191,15 @@ class SDSetup:
 			dir_path = 'extensions/sd-webui-controlnet/models'
 			for key, value in self.controlnet_models.items():
 				if value:
-					if os.path.exists(dir_path+'/'+key+'.pth'):
+					if os.path.exists(f'{dir_path}/{key}.pth'):
 						cprint(f'\ncontrolnet model {key} is already installed', GREEN)
 					else:
 						cprint(f'\ndownloading the {key} controlnet model...', GREEN)
 						wget(f'{base_link}/resolve/main/control_v11p_sd15_{key}.pth', output_dir=dir_path, output_filename=key+'.pth')
 				else:
-					if os.path.exists(dir_path+'/'+key+'.pth'):
+					if os.path.exists(f'{dir_path}/{key}.pth'):
 						cprint(f'\ndeleting controlnet model {key}... ', GREEN)
-						os.system('rm '+dir_path+'/'+key+'.pth')
+						os.system(f'rm -f "{dir_path}/{key}.pth"')
 					else:
 						cprint(f'\ncontrolnet model {key} is already deleted', GREEN)
 
@@ -417,7 +417,7 @@ class SDSetup:
 			else:
 				# get its info
 				# model_type, model_id, model_name, model_url, model_page_id, model_page_url
-				_, _, model_name, _, model_page_id, _ = self.cache['downloaded_models_in_discord_channel'][model_index].values()
+				_, _, _, model_name, model_page_id, _ = self.cache['downloaded_models_in_discord_channel'][model_index].values()
 				cprint(f'{model_name} is already installed', GREEN)
 
 			self.currently_found_model_page_ids.append(model_page_id)
@@ -436,7 +436,7 @@ class SDSetup:
 			# delete the file
 			if os.path.exists(full_path):
 				cprint(f'deleting {full_path}...', GREEN)
-				os.system(f'rm -f {full_path}')
+				os.system(f'rm -f "{full_path}"')
 			# file not found or was already deleted
 			else:
 				cprint(f'{full_path} is already deleted', GREEN)
@@ -459,13 +459,13 @@ class SDSetup:
 			else:
 				# get its info
 				# model_type, model_id, model_name, model_url, model_page_id, model_page_url
-				model_type, _, model_name, _, _, _ = self.cache['downloaded_models_in_discord_channel'][model_index].values()
+				model_type, _, _, model_name, _, _ = self.cache['downloaded_models_in_discord_channel'][model_index].values()
 				dir_path = self.models_folder[model_type]
 				full_path = f'{dir_path}/{model_name}'+'.safetensors'
 				if os.path.exists(full_path):
 					# delete it
 					cprint(f'deleting {model_name}...', GREEN)
-					os.system(f'rm -f {full_path}')
+					os.system(f'rm -f "{full_path}"')
 				else:
 					# was deleted without the help of this script
 					cprint(f'{model_name} is already deleted', GREEN)
@@ -485,7 +485,7 @@ class SDSetup:
 				full_path = f'{dir_path}/{model_name}'+'.safetensors'
 				if os.path.exists(full_path):
 					cprint(f'deleting {model_name}...', GREEN)
-					os.system('rm -f '+full_path)
+					os.system(f'rm -f "{full_path}"')
 					# updating cache (cannot use indices since we are iterating over the list itself :c)
 					self.cache[source].remove(model)
 				else:
