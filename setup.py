@@ -367,7 +367,10 @@ class SDSetup:
 			full_path = f'{dir_path}/{model_name}.safetensors'
 		
 		previews = page.xpath('/html/body/div/span/div/div/div/main/div/div/div[3]/div[2]/div/div[1]/div[1]/div/div')
-		return (model_type, model_id, model_name, model_url, model_page_id, dir_path, full_path, previews)
+		# download its preview image
+		if len(previews) > 0:
+			wget(previews.xpath('./div/div/div[2]/div/div[1]/img/@src').get(), output_dir=dir_path, output_filename=f'{model_name}.preview.png', show_progress=False)
+		return (model_type, model_id, model_name, model_url, model_page_id, dir_path, full_path)
 
 
 	def install_models(self, embeds):
@@ -385,7 +388,7 @@ class SDSetup:
 				# there was an issue with getting the model info
 				if model_info == None: continue
 				# otherwise just unpack the model info
-				model_type, model_id, model_name, model_url, model_page_id, dir_path, full_path, previews = model_info
+				model_type, model_id, model_name, model_url, model_page_id, dir_path, full_path = model_info
 				if os.path.exists(full_path):
 					# was downloaded without the help of this script
 					cprint(f'{model_name} is already installed', GREEN)
@@ -410,9 +413,6 @@ class SDSetup:
 							'model_page_id': model_page_id,
 							'model_page_url': model_page_url})
 						# download its preview image
-						if len(previews) > 0:
-							# assumes all are .safetensors for now
-							wget(previews.xpath('./div/div/div[2]/div/div[1]/img/@src').get(), output_dir=dir_path, output_filename=f'{model_name}.preview.png', show_progress=False)
 			# yes it is
 			else:
 				# get its info
