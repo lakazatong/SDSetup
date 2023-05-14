@@ -104,6 +104,17 @@ def get_info_of_chosen_model(chosen_model, model_url):
 	build_model_url(model_url, file_type, file_fp, file_size, file_format)
 	return model_url
 
+def format_model_name(name):
+	name = name.strip()
+	name = name.replace('\\', '').replace('/', '').replace(':', '')
+	name = name.replace('*', '').replace('?', '').replace('"', '')
+	name = name.replace('<', '').replace('>', '').replace('|', '')
+	while '  ' in name: name = name.replace('  ', ' ')
+	name = name.replace(' ', '_')
+	# if so, it will not be recognized by the webui lol
+	if name == '.': name = 'model'
+	return name
+
 # initialization
 
 class SDSetup:
@@ -331,7 +342,7 @@ class SDSetup:
 			cprint(f'type "{model_type}" is not yet supported', RED)
 			return None
 		model_id = str(model_info[1]['state']['data']['modelVersions'][0]['id'])
-		model_name = str(model_info[1]['state']['data']['name']).strip().replace(' ', '_')
+		model_name = format_model_name(str(model_info[1]['state']['data']['name']))
 		model_url = 'https://civitai.com/api/download/models/'+model_id
 		model_page_id = str(model_info[1]['state']['data']['modelVersions'][0]['modelId'])
 		# only one file
@@ -458,7 +469,7 @@ class SDSetup:
 			# no it is not
 			if model_index == -1:
 				title = embeds[j]['title']
-				model_name = title[:title.index('Stable Diffusion')-3].strip().replace(' ', '_')
+				model_name = format_model_name(title[:title.index('Stable Diffusion')-3])
 				cprint(f'{model_name} is already deleted', GREEN)
 			# yes it is
 			else:
@@ -572,7 +583,7 @@ class SDSetup:
 			model_page_id = str(model['modelVersions'][0]['modelId'])
 			model_index = find_index(self.cache['models_in_civitai_favorites'], 'model_page_id', model_page_id)
 			if model_index == -1: model_index = find_index(self.cache['downloaded_models_in_discord_channel'], 'model_page_id', model_page_id)
-			model_name = model['name'].replace(' ', '_')
+			model_name = format_model_name(model['name'])
 
 			# yes it is
 			if model_index != -1:
@@ -605,6 +616,8 @@ class SDSetup:
 			json.dump(self.cache, f, indent=3)
 
 	def set_relauncher_alias(self):
+		if self.running_in_runpod_env:
+			wget('https://cdn.discordapp.com/attachments/1103108086857744406/1103108117631357018/relauncher.py')
 		# for convenience
 		bashrc_path = '/root/.bashrc' if self.running_in_runpod_env else get_path('.bashrc', directory='/')
 		if bashrc_path != None:

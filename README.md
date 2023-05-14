@@ -29,9 +29,41 @@ python setup.py
 ```
 Your Stable Diffusion web UI repository is now setup!
 
-## Instructions
+## Instructions and Tips
 
 - Use reactions to give instructions in the discord channel : ❌ SKIP, 🚫 DELETE.
+
+- Some good to have files are in the files folder, you can upload them in your Discord channel if you like.
+
+Some interesting lines in ui-config.json:
+
+	txt2img:
+	
+		3: default positive prompt
+		5: default negative prompt
+		9: default sampling method
+		11: default sampling steps
+		49: default width
+		54: default height
+		59: default batch count
+		64: default batch size
+		69: default CFG scale
+		74: default seed
+
+	img2img:
+
+		142: default positive prompt
+		144: default negative prompt
+		154: default resize mode
+		176: default sampling method
+		178: default sampling steps
+		187: default width
+		192: default height
+		197: default batch count
+		202: default batch size
+		207: default CFG scale
+		216: default denoising strength
+		221: default seed
 
 ## Warnings
 
