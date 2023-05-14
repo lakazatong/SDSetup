@@ -278,7 +278,7 @@ class SDSetup:
 			}
 			self.clone_required_repos()
 		else:
-			cprint(f'this setup.py has not been mounted with a config,\nrun \'{py_exe} setup.py -m\' to do so', RED)
+			cprint(f'this setup.py has not been mounted with a config\nrun \'{py_exe} setup.py -m\' to do so', RED)
 			exit(1)
 
 	def get_messages(self):
