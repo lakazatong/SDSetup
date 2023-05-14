@@ -1,9 +1,9 @@
 import sys, os, time
 
 if sys.platform.startswith('win'):
-	ext = 'bat'
+	launch_string = 'webui-user.bat'
 else:
-	ext = 'sh'
+	launch_string = 'webui.sh -f'
 
 n = 0
 while True:
@@ -11,7 +11,6 @@ while True:
 	print('Relauncher: Launching...')
 	if n > 0:
 		print(f'\tRelaunch count: {n}')
-	launch_string = f'webui.{ext} -f'
 	os.system(launch_string)
 	print('Relauncher: Process is ending. Relaunching in 2s...')
 	n += 1
