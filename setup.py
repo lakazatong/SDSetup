@@ -102,8 +102,7 @@ def get_info_of_chosen_model(chosen_model, model_url):
 	file_metadata = chosen_model['metadata']
 	file_type, file_fp, file_size, file_format = chosen_model['type'], file_metadata['fp'], file_metadata['size'], file_metadata['format']
 	build_model_url(model_url, file_type, file_fp, file_size, file_format)
-	model_file_name = chosen_model['name']
-	return model_url, model_file_name
+	return model_url
 
 # initialization
 
@@ -334,20 +333,19 @@ class SDSetup:
 		model_page_id = str(model_info[1]['state']['data']['modelVersions'][0]['modelId'])
 		# only one file
 		if len(model_info[1]['state']['data']['modelVersions'][0]['files']) == 1:
-			model_file_name = str(model_info[1]['state']['data']['modelVersions'][0]['files'][0]['name']).strip()
-			full_path = f'{dir_path}/{model_file_name}'
+			full_path = f'{dir_path}/{model_name}'+'.safetensors'
 		# more than one file
 		else:
 			model_versions = []
 			for i, file in enumerate(model_info[1]['state']['data']['modelVersions'][0]['files']):
-				# VAEs are needed anyway, no prompt
-				if file['type'] == 'VAE':
+				# These are needed anyway, no prompt (Config type files are .yaml files)
+				if file['type'] in ['VAE', 'Config']:
 					vae_full_path = dir_path+'/'+file['name']
 					if not os.path.exists(vae_full_path):
-						wget(model_url+'?type=VAE', output_dir=dir_path, output_filename=file['name'], show_progress=True)
+						wget(model_url+'?type='+file['type'], output_dir=dir_path, output_filename=file['name'], show_progress=True)
 				# whatever it is, store it
 				else:
-					model_versions.append({'model_index': i, 'type': file['type'], 'name': file['name'], 'size': round(file['sizeKB']), 'metadata': {'fp': file['metadata']['fp'], 'size': file['metadata']['size'], 'format': file['metadata']['format']}})
+					model_versions.append({'model_index': i, 'type': file['type'], 'size': round(file['sizeKB']), 'metadata': {'fp': file['metadata']['fp'], 'size': file['metadata']['size'], 'format': file['metadata']['format']}})
 			# there is only one or more VAE and one model file
 			if len(model_versions) == 1:
 				chosen_model = model_versions[0]
@@ -355,7 +353,7 @@ class SDSetup:
 			else:
 				# prompt which one to download
 				if self.prompt_model_files:
-					cprint('there are more than one file for this model, choose one by entering its model_index:', PURPLE)
+					cprint(model_name+' more than model, choose one by entering its model_index:', PURPLE)
 					cprint(json.dumps(model_versions, indent=3), PURPLE)
 					result = subprocess.run('bash -c \'read -p "" input; echo $input\'', shell=True, capture_output=True, text=True)
 					chosen_model = model_versions[int(result.stdout.strip())]
@@ -365,10 +363,11 @@ class SDSetup:
 					for i in range(1, len(model_versions)):
 						if model_versions[i]['size'] > chosen_model['size']:
 							chosen_model = model_versions[i]
-			model_url, model_file_name = get_info_of_chosen_model(chosen_model, model_url)
-			full_path = f'{dir_path}/{model_file_name}'
+			model_url = get_info_of_chosen_model(chosen_model, model_url)
+			full_path = f'{dir_path}/{model_name}.safetensors'
 		
-		return (model_type, model_id, model_name, model_url, model_page_id, model_file_name, dir_path, full_path)
+		previews = page.xpath('/html/body/div/span/div/div/div/main/div/div/div[3]/div[2]/div/div[1]/div[1]/div/div')
+		return (model_type, model_id, model_name, model_url, model_page_id, dir_path, full_path, previews)
 
 
 	def install_models(self, embeds):
@@ -386,14 +385,14 @@ class SDSetup:
 				# there was an issue with getting the model info
 				if model_info == None: continue
 				# otherwise just unpack the model info
-				model_type, model_id, model_name, model_url, model_page_id, model_file_name, dir_path, full_path = model_info
+				model_type, model_id, model_name, model_url, model_page_id, dir_path, full_path, previews = model_info
 				if os.path.exists(full_path):
 					# was downloaded without the help of this script
 					cprint(f'{model_name} is already installed', GREEN)
 				else:
 					# download it
 					if not self.show_models_progress_bar: cprint(f'installing {model_name}...', GREEN)
-					if wget(model_url, output_dir=dir_path, output_filename=model_file_name, show_progress=self.show_models_progress_bar):
+					if wget(model_url, output_dir=dir_path, output_filename=model_name+'.safetensors', show_progress=self.show_models_progress_bar):
 						# add it to cache
 						self.cache['downloaded_models_in_discord_channel'].append(
 							{
@@ -404,21 +403,17 @@ class SDSetup:
 								'model_name': model_name,
 
 								'model_page_id': model_page_id,
-								'model_page_url': model_page_url,
-								'model_file_name': model_file_name
+								'model_page_url': model_page_url
 							})
 						# download its preview image
-						previews = page.xpath('/html/body/div/span/div/div/div/main/div/div/div[3]/div[2]/div/div[1]/div[1]/div/div')
-						# otherwise no preview available :c
 						if len(previews) > 0:
 							# assumes all are .safetensors for now
-							preview_file_name = model_file_name[:len(model_file_name)-len('.safetensors')]
-							wget(previews.xpath('./div/div/div[2]/div/div[1]/img/@src').get(), output_dir=dir_path, output_filename=f'{preview_file_name}.preview.png', show_progress=False)
+							wget(previews.xpath('./div/div/div[2]/div/div[1]/img/@src').get(), output_dir=dir_path, output_filename=f'{model_name}.preview.png', show_progress=False)
 			# yes it is
 			else:
 				# get its info
-				# model_type, model_id, model_name, model_url, model_page_id, model_file_name, model_page_url
-				_, _, model_name, _, model_page_id, _, _ = self.cache['downloaded_models_in_discord_channel'][model_index].values()
+				# model_type, model_id, model_name, model_url, model_page_id, model_page_url
+				_, _, model_name, _, model_page_id, _ = self.cache['downloaded_models_in_discord_channel'][model_index].values()
 				cprint(f'{model_name} is already installed', GREEN)
 
 			self.currently_found_model_page_ids.append(model_page_id)
@@ -459,10 +454,10 @@ class SDSetup:
 			# yes it is
 			else:
 				# get its info
-				# model_type, model_id, model_name, model_url, model_page_id, model_file_name, model_page_url
-				model_type, _, model_name, _, _, model_file_name, _ = self.cache['downloaded_models_in_discord_channel'][model_index].values()
+				# model_type, model_id, model_name, model_url, model_page_id, model_page_url
+				model_type, _, model_name, _, _, _ = self.cache['downloaded_models_in_discord_channel'][model_index].values()
 				dir_path = self.models_folder[model_type]
-				full_path = f'{dir_path}/{model_file_name}'
+				full_path = f'{dir_path}/{model_name}'+'.safetensors'
 				if os.path.exists(full_path):
 					# delete it
 					cprint(f'deleting {model_name}...', GREEN)
@@ -482,9 +477,8 @@ class SDSetup:
 				# user removed this model from the source, interprets it as 'delete it'
 				model_type = model['model_type']
 				model_name = model['model_name']
-				model_file_name = model['model_file_name']
 				dir_path = self.models_folder[model_type]
-				full_path = f'{dir_path}/{model_file_name}'
+				full_path = f'{dir_path}/{model_name}'+'.safetensors'
 				if os.path.exists(full_path):
 					cprint(f'deleting {model_name}...', GREEN)
 					os.system('rm -f '+full_path)
@@ -579,11 +573,10 @@ class SDSetup:
 				# get its info
 				model_id = str(model['modelVersions'][0]['id'])
 				model_url = 'https://civitai.com/api/download/models/'+model_id
-				model_file_name = model['modelVersions'][0]['files'][0]['name']
 				model_page_url = f'https://civitai.com/models/'+model_page_id
 				# download it
 				if not self.show_models_progress_bar: cprint(f'installing {model_name}...', GREEN)
-				if wget(model_url, output_dir=dir_path, output_filename=model_file_name, show_progress=self.show_models_progress_bar):
+				if wget(model_url, output_dir=dir_path, output_filename=model_name+'.safetensors', show_progress=self.show_models_progress_bar):
 					# add it to cache
 					self.cache['models_in_civitai_favorites'].append(
 							{
@@ -594,8 +587,7 @@ class SDSetup:
 								'model_name': model_name,
 
 								'model_page_id': model_page_id,
-								'model_page_url': model_page_url,
-								'model_file_name': model_file_name
+								'model_page_url': model_page_ur
 							})
 			
 			self.currently_found_model_page_ids.append(model_page_id)
