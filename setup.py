@@ -477,7 +477,7 @@ class SDSetup:
 			# no it is not
 			if model_index == -1:
 				title = embeds[j]['title']
-				model_name = format_model_name(title[:title.index('Stable Diffusion')-3])
+				model_name = format_model_name(title[:title.index('|')-1])
 				cprint(f'{model_name} is already deleted', GREEN)
 			# yes it is
 			else:
@@ -539,7 +539,7 @@ class SDSetup:
 				else:
 					for j in range(len(self.messages[i]['embeds'])):
 						title = self.messages[i]['embeds'][j]['title']
-						skipped_name = title[:title.index('Stable Diffusion')-3].strip()
+						skipped_name = title[:title.index('|')-1].strip()
 						cprint(f'\n({self.k}/{self.n})\nskipping {skipped_name}', GREEN)
 			
 			elif INSTALL:
