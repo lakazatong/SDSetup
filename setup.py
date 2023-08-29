@@ -210,12 +210,12 @@ class SDSetup:
 					else:
 						cprint(f'\ndownloading the {key} controlnet model...', GREEN)
 						wget(f'{base_link}/resolve/main/control_v11p_sd15_{key}.pth', output_dir=dir_path, output_filename=key+'.pth')
-				else:
-					if os.path.exists(f'{dir_path}/{key}.pth'):
-						cprint(f'\ndeleting controlnet model {key}... ', GREEN)
-						os.system(f'rm -f "{dir_path}/{key}.pth"')
-					else:
-						cprint(f'\ncontrolnet model {key} is already deleted', GREEN)
+				# else:
+				# 	if os.path.exists(f'{dir_path}/{key}.pth'):
+				# 		cprint(f'\ndeleting controlnet model {key}... ', GREEN)
+				# 		os.system(f'rm -f "{dir_path}/{key}.pth"')
+				# 	else:
+				# 		cprint(f'\ncontrolnet model {key} is already deleted', GREEN)
 
 	def mount_config(self):
 		# mount the config.json file into this class
