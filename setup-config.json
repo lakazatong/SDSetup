@@ -19,11 +19,11 @@
 	The cache keeps track of only one file, so you will only be able to choose one */
 	"prompt_model_files": false,
 
-	/* IT ALLOWS FOR NSFW RESULTS, it will use the stable diffusion repo, not the one provided by runpod
+	/* SET TO TRUE IF YOU WANT NSFW RESULTS IN RUNPOD ENVIRONMENT, it will use the stable diffusion repo, not the one provided by runpod
 	I also have to run the webui with the '--no-half-vae --no-half --precision full' args to never get black images it seems
-	if anyone know why it creates black images when doing nsfw prompts in runpod, mp me at lakazatong#0206
-	(that would not need to clone the entire repo to speed up the setup like I currently do) */
-	"clone_sd_repo": true,
+	if anyone know why it creates black images when doing nsfw prompts in runpod, dm me on Discord at lakazatong
+	(that would not need to clone the entire repo to speed up the setup like it currently does) */
+	"clone_sd_repo": false,
 
 	// required for lycoris models from civitai to work 
 	"clone_lycoris_repo": true,
