@@ -23,11 +23,17 @@ python setup.py -m
 ```
 Your setup.py is now ready!
 
+* On Linux or WSL:
+
 Paste it in any Stable Diffusion web UI repository and run:
 ```
 python setup.py
 ```
 Your Stable Diffusion web UI repository is now setup!
+
+* On Windows:
+
+Does not work on windows for now.
 
 ## Instructions and Tips
 
@@ -101,6 +107,8 @@ Go to https://civitai.com/user/account, login, scroll down, in 'API Keys' click 
 Right click on the channel and click 'Copy Channel ID' c:
 
 ## TODO
+
+- Windows support
 
 - Add a prompt in case there are multiple files included with the model link (could also just be a VAE, in that case download it without prompting the user).
 
