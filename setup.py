@@ -237,6 +237,8 @@ class SDSetup:
 		content = content[:i]+'\n'+content[j:]
 		# replace
 		content = content.replace('class SDSetup:', mount, 1)
+		if sys.platform.startswith('win'):
+			content = content.replace('\r\n','\r')
 		# write
 		with open(__file__, 'w') as f:
 			f.write(content)
@@ -301,10 +303,10 @@ class SDSetup:
 		if 'reactions' in message:
 			for reaction in message['reactions']:
 				emoji = bytes(reaction['emoji']['name'], 'utf-8')
-				if emoji == b'\xe2\x9d\x8c':
+				if emoji == b'\xf0\x9f\x9a\xab':
 					SKIP = True
 					break
-				elif emoji == b'\xf0\x9f\x9a\xab':
+				elif emoji == b'\xe2\x9d\x8c':
 					DELETE = True
 		else:
 			INSTALL = True

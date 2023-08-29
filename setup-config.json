@@ -19,8 +19,7 @@
 	The cache keeps track of only one file, so you will only be able to choose one */
 	"prompt_model_files": false,
 
-	/* for debugging in local, should be true
-	IT ALLOWS FOR NSFW RESULTS, it will use the stable diffusion repo, not the one provided by runpod
+	/* IT ALLOWS FOR NSFW RESULTS, it will use the stable diffusion repo, not the one provided by runpod
 	I also have to run the webui with the '--no-half-vae --no-half --precision full' args to never get black images it seems
 	if anyone know why it creates black images when doing nsfw prompts in runpod, mp me at lakazatong#0206
 	(that would not need to clone the entire repo to speed up the setup like I currently do) */

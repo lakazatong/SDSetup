@@ -31,39 +31,39 @@ Your Stable Diffusion web UI repository is now setup!
 
 ## Instructions and Tips
 
-- Use reactions to give instructions in the discord channel : ❌ SKIP, 🚫 DELETE.
+- Use reactions to give instructions in the discord channel : 🚫 SKIP, ❌ DELETE (prioritizes SKIP over DELETE if both reaction are on).
 
 - Some good to have files are in the files folder, you can upload them in your Discord channel if you like.
 
-Some interesting lines in ui-config.json:
+Some interesting lines in ui-config.json (for A1111 release 1.5.2):
 
 	txt2img:
 	
 		3: default positive prompt
 		5: default negative prompt
-		9: default sampling method
-		11: default sampling steps
-		49: default width
-		54: default height
-		59: default batch count
-		64: default batch size
-		69: default CFG scale
-		74: default seed
+		37: default sampling method
+		39: default sampling steps
+		83: default width
+		88: default height
+		94: default batch count
+		99: default batch size
+		104: default CFG scale
+		109: default seed
 
 	img2img:
 
-		142: default positive prompt
-		144: default negative prompt
-		154: default resize mode
-		176: default sampling method
-		178: default sampling steps
-		187: default width
-		192: default height
-		197: default batch count
-		202: default batch size
-		207: default CFG scale
-		216: default denoising strength
-		221: default seed
+		189: default positive prompt
+		191: default negative prompt
+		240: default resize mode
+		262: default sampling method
+		264: default sampling steps
+		273: default width
+		278: default height
+		295: default batch count
+		300: default batch size
+		305: default CFG scale
+		314: default denoising strength
+		319: default seed
 
 ## Warnings
 
