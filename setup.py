@@ -209,7 +209,8 @@ class SDSetup:
 						cprint(f'\ncontrolnet model {key} is already installed', GREEN)
 					else:
 						cprint(f'\ndownloading the {key} controlnet model...', GREEN)
-						wget(f'{base_link}/resolve/main/control_v11p_sd15_{key}.pth', output_dir=dir_path, output_filename=key+'.pth')
+						controlnet_model_link = f'{base_link}/resolve/main/control_v11p_sd15_{key}.pth' if key != 'lineart_anime' else f'{base_link}/resolve/main/control_v11p_sd15s2_lineart_anime.pth'
+						wget(controlnet_model_link, output_dir=dir_path, output_filename=key+'.pth')
 				# else:
 				# 	if os.path.exists(f'{dir_path}/{key}.pth'):
 				# 		cprint(f'\ndeleting controlnet model {key}... ', GREEN)
@@ -279,7 +280,8 @@ class SDSetup:
 				"Checkpoint": f"{self.wd}/models/Stable-diffusion",
 				"LORA": f"{self.wd}/models/Lora",
 				"LoCon": f"{self.wd}/models/LyCORIS",
-				"TextualInversion": f"{self.wd}/embeddings"
+				"TextualInversion": f"{self.wd}/embeddings",
+				"VAE": f"{self.wd}/models/VAE"
 			}
 			self.clone_required_repos()
 		else:
