@@ -691,8 +691,6 @@ class SDSetup:
 			cprint('\ncould not find the .bashrc file', RED)
 
 	def cleanup(self):
-		# gets TCMalloc (improves CPU memory usage)
-		os.system('sudo apt install google-perftools')
 		# hang to let the user read eventual errors
 		if not self.args['quick']: os.system('bash -c "read -p \'\nPress Enter\'"')
 		os.system("clear")
@@ -707,8 +705,11 @@ class SDSetup:
 		self.save_cache()
 		self.set_relauncher_alias()
 		if not self.running_in_runpod_env:
+			cprint('\npopulating python env...', GREEN)
 			os.system('sudo apt install python3.10-venv')
 			os.system(f'{py_exe} -m venv venv/')
+		cprint('\ngets TCMalloc (improves CPU memory usage)', GREEN)
+		os.system('sudo apt install google-perftools')
 		cprint('\nAll done', BLUE)
 		self.cleanup()
 		# reload terminal (to reload ~/.bashrc)
