@@ -201,6 +201,7 @@ class SDSetup:
 			if not os.path.exists('extensions/sd-webui-controlnet'):
 				cprint('\ncloning the controlnet ripo...', GREEN)
 				os.system('cd extensions && git clone https://github.com/Mikubill/sd-webui-controlnet')
+				os.system('cd extensions/sd-webui-controlnet && mkdir poses')
 			base_link = 'https://huggingface.co/lllyasviel/ControlNet-v1-1'
 			dir_path = 'extensions/sd-webui-controlnet/models'
 			for key, value in self.controlnet_models.items():
@@ -282,7 +283,8 @@ class SDSetup:
 				"LORA": f"{self.wd}/models/Lora",
 				"LoCon": f"{self.wd}/models/LyCORIS",
 				"TextualInversion": f"{self.wd}/embeddings",
-				"VAE": f"{self.wd}/models/VAE"
+				"VAE": f"{self.wd}/models/VAE",
+				"Poses": f"{self.wd}/extensions/sd-webui-controlnet/poses"
 			}
 			self.clone_required_repos()
 		else:
@@ -354,6 +356,9 @@ class SDSetup:
 		model_name = format_model_name(str(model_info[1]['state']['data']['name']))
 		model_url = 'https://civitai.com/api/download/models/'+model_id
 		model_page_id = str(model_info[1]['state']['data']['modelVersions'][0]['modelId'])
+		if model_type == 'Poses':
+			# model_name is a folder in this case
+			return (model_type, model_id, model_name, model_url, model_page_id, dir_path, f'{dir_path}/{model_name}')
 		# only one file
 		if len(model_info[1]['state']['data']['modelVersions'][0]['files']) == 1:
 			full_path = f'{dir_path}/{model_name}'+'.safetensors'
@@ -397,7 +402,6 @@ class SDSetup:
 				wget(previews.xpath('./div/div/div[2]/div/div[1]/img/@src').get(), output_dir=dir_path, output_filename=f'{model_name}.preview.png', show_progress=False)
 		return (model_type, model_id, model_name, model_url, model_page_id, dir_path, full_path)
 
-
 	def install_models(self, embeds):
 		for j in range(len(embeds)):
 			model_page_url = embeds[j]['url']
@@ -414,21 +418,10 @@ class SDSetup:
 				if model_info == None: continue
 				# otherwise just unpack the model info
 				model_type, model_id, model_name, model_url, model_page_id, dir_path, full_path = model_info
-				if os.path.exists(full_path) and os.path.getsize(full_path) != 0:
-					# was downloaded without the help of this script
-					cprint(f'{model_name} is already installed', GREEN)
-					# add it to cache
-					self.cache['downloaded_models_in_discord_channel'].append({
-						'model_type': model_type,
-						'model_id': model_id,
-						'model_url': model_url,
-						'model_name': model_name,
-						'model_page_id': model_page_id,
-						'model_page_url': model_page_url})
-				else:
-					# download it
-					if not self.show_models_progress_bar: cprint(f'installing {model_name}...', GREEN)
-					if wget(model_url, output_dir=dir_path, output_filename=model_name+'.safetensors', show_progress=self.show_models_progress_bar):
+				if model_type == 'Poses':
+					if os.path.exists(full_path):
+						# was downloaded without the help of this script
+						cprint(f'{model_name} is already installed', GREEN)
 						# add it to cache
 						self.cache['downloaded_models_in_discord_channel'].append({
 							'model_type': model_type,
@@ -437,7 +430,49 @@ class SDSetup:
 							'model_name': model_name,
 							'model_page_id': model_page_id,
 							'model_page_url': model_page_url})
-						# download its preview image
+					else:
+						# download it
+						if not self.show_models_progress_bar: cprint(f'installing {model_name}...', GREEN)
+						if wget(model_url, output_dir=dir_path, output_filename=model_name+'.zip', show_progress=self.show_models_progress_bar):
+							# add it to cache
+							self.cache['downloaded_models_in_discord_channel'].append({
+								'model_type': model_type,
+								'model_id': model_id,
+								'model_url': model_url,
+								'model_name': model_name,
+								'model_page_id': model_page_id,
+								'model_page_url': model_page_url})
+							# convert the zip into a folder
+							os.system(	f'cd extensions/sd-webui-controlnet/poses &&' + \
+										f'mkdir {model_name} &&' \
+										f'mv {model_name}.zip {model_name} &&' \
+										f'cd {model_name} &&' \
+										f'unzip {model_name}.zip &&' \
+										f'rm {model_name}.zip')
+				else:
+					if os.path.exists(full_path) and os.path.getsize(full_path) != 0:
+						# was downloaded without the help of this script
+						cprint(f'{model_name} is already installed', GREEN)
+						# add it to cache
+						self.cache['downloaded_models_in_discord_channel'].append({
+							'model_type': model_type,
+							'model_id': model_id,
+							'model_url': model_url,
+							'model_name': model_name,
+							'model_page_id': model_page_id,
+							'model_page_url': model_page_url})
+					else:
+						# download it
+						if not self.show_models_progress_bar: cprint(f'installing {model_name}...', GREEN)
+						if wget(model_url, output_dir=dir_path, output_filename=model_name+'.safetensors', show_progress=self.show_models_progress_bar):
+							# add it to cache
+							self.cache['downloaded_models_in_discord_channel'].append({
+								'model_type': model_type,
+								'model_id': model_id,
+								'model_url': model_url,
+								'model_name': model_name,
+								'model_page_id': model_page_id,
+								'model_page_url': model_page_url})
 			# yes it is
 			else:
 				# get its info
@@ -516,51 +551,65 @@ class SDSetup:
 				else:
 					cprint(f'{model_name} is already deleted', GREEN)
 
+	# def skip_action(self, i):
+		# self.k += 1
+		# file(s) to skip
+		# if self.messages[i]['attachments'] != []:
+			# for j in range(len(self.messages[i]['attachments'])):
+				# skipped_name = self.messages[i]['attachments'][j]['filename']
+				# cprint(f'\n({self.k}/{self.n})\nskipping {skipped_name}', GREEN)
+		# model(s) to skip
+		# else:
+			# for j in range(len(self.messages[i]['embeds'])):
+				# title = self.messages[i]['embeds'][j]['title']
+				# skipped_name = title[:title.index('|')-1].strip()
+				# cprint(f'\n({self.k}/{self.n})\nskipping {skipped_name}', GREEN)
+
+	def install_action(self, i):
+		self.k += 1
+		# file(s) to transfer
+		if self.messages[i]['attachments'] != []:
+			self.install_files(self.messages[i]['attachments'])
+		# model(s) to transfer
+		else:
+			self.install_models(self.messages[i]['embeds'])
+
+	def delete_action(self, i):
+		self.k += 1
+		# file.s to delete
+		if self.messages[i]['attachments'] != []:
+			self.delete_files(self.messages[i]['attachments'])
+		# model.s to delete
+		else:
+			self.delete_models(self.messages[i]['embeds'])
+
 	def setup_from_discord_messages(self):
 		if not self.get_messages():
 			cprint('failed to get messages', RED)
 			return
-		self.k, self.n = 0, len(self.messages)
+		n = len(self.messages)
+		self.k, self.n = 0, n
 		self.currently_found_model_page_ids = []
 
-		# perform the requested actions
-		for i in range(self.n):
+		messages_actions = [lambda i:...]*n
 
-			self.k += 1
+		# parse the reactions (so that self.n does not account for SKIPs)
+		for i in range(n):
+
 			SKIP, INSTALL, DELETE = self.parse_reactions(self.messages[i])
-			
-			# do it this way so that it's easy to implement more than one action on each message later
-			if SKIP:
-				# file(s) to skip
-				if self.messages[i]['attachments'] != []:
-					for j in range(len(self.messages[i]['attachments'])):
-						skipped_name = self.messages[i]['attachments'][j]['filename']
-						cprint(f'\n({self.k}/{self.n})\nskipping {skipped_name}', GREEN)
-				# model(s) to skip
-				else:
-					for j in range(len(self.messages[i]['embeds'])):
-						title = self.messages[i]['embeds'][j]['title']
-						skipped_name = title[:title.index('|')-1].strip()
-						cprint(f'\n({self.k}/{self.n})\nskipping {skipped_name}', GREEN)
-			
-			elif INSTALL:
-				# file(s) to transfer
-				if self.messages[i]['attachments'] != []:
-					self.install_files(self.messages[i]['attachments'])
-				# model(s) to transfer
-				else:
-					self.install_models(self.messages[i]['embeds'])
-							
-			elif DELETE:
-				# file.s to delete
-				if self.messages[i]['attachments'] != []:
-					self.delete_files(self.messages[i]['attachments'])
-				# model.s to delete
-				else:
-					self.delete_models(self.messages[i]['embeds'])
 
+			if SKIP:
+				self.n -= 1
+			elif INSTALL:
+				messages_actions[i] = self.install_action
+			elif DELETE:
+				messages_actions[i] = self.delete_action
 			else:
-				cprint("\n???", RED)
+				cprint('\n???', 'red')
+
+		# perform the requested actions
+		for i in range(n):
+			messages_actions[i](i)
 
 		self.delete_unseen_models('downloaded_models_in_discord_channel')
 
@@ -619,16 +668,16 @@ class SDSetup:
 		
 		self.delete_unseen_models('models_in_civitai_favorites')
 
-	def save_cahe(self):
+	def save_cache(self):
 		# save cache
 		with open('.setup-cache', 'w+') as f:
 			json.dump(self.cache, f, indent=3)
 
 	def set_relauncher_alias(self):
 		if self.running_in_runpod_env:
-			wget('https://cdn.discordapp.com/attachments/1103108086857744406/1103108117631357018/relauncher.py')
+			wget('https://cdn.discordapp.com/attachments/1103108086857744406/1146213681030512640/relauncher.py')
 		# for convenience
-		bashrc_path = '/root/.bashrc' if self.running_in_runpod_env else get_path('.bashrc', directory='/')
+		bashrc_path = '/root/.bashrc' if self.running_in_runpod_env else get_path('.bashrc', directory='/home')
 		if bashrc_path != None:
 			with open(bashrc_path, 'r') as f:
 				bashrc_content = f.read()
@@ -654,7 +703,7 @@ class SDSetup:
 	def setup(self):
 		self.setup_from_discord_messages()
 		if self.args['favorites']: self.setup_from_civitai_favorites()
-		self.save_cahe()
+		self.save_cache()
 		self.set_relauncher_alias()
 		cprint('\nAll done', BLUE)
 		self.cleanup()
