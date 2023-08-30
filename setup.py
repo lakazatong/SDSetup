@@ -705,6 +705,9 @@ class SDSetup:
 		if self.args['favorites']: self.setup_from_civitai_favorites()
 		self.save_cache()
 		self.set_relauncher_alias()
+		if not self.running_in_runpod_env:
+			os.system('sudo apt install python3.10-venv')
+			os.system(f'{py_exe} -m venv venv/')
 		cprint('\nAll done', BLUE)
 		self.cleanup()
 		# reload terminal (to reload ~/.bashrc)
