@@ -35,7 +35,7 @@ def wget(url:str, output_filename:str=None, output_dir:str=None, show_progress:b
 		print(f'wget {quiet_opt} {progress_opt} {output_opt} {auth_opt} {header_opt} {url}')
 	
 	if output_dir != None:
-		if os.path.exists(output_dir):
+		if os.path.exists(output_dir) and os.path.getsize(output_dir):
 			os.system(f'cd "{output_dir}" && {cmd}')
 		else:
 			cprint(f'\ncould not wget "{url}" in "{output_dir}" because it does not exists', RED)
@@ -46,7 +46,7 @@ def wget(url:str, output_filename:str=None, output_dir:str=None, show_progress:b
 	if output_filename == None:
 		output_filename = max(os.listdir(), key=os.path.getmtime)
 	full_path = f'{output_dir}/{output_filename}' if output_dir != None else output_filename
-	if os.path.exists(full_path):
+	if os.path.exists(full_path) and os.path.getsize(full_path) != 0:
 		with open(full_path, 'rb') as f:
 			if f.read() == b'':
 				cprint(f'\nthis command:\n{cmd}\ndownloaded a file of 0 bytes', RED)
@@ -131,7 +131,7 @@ class SDSetup:
 	cache_filename = '.setup-cache'
 
 	def load_config(self):
-		if os.path.exists(self.config_filename):
+		if os.path.exists(self.config_filename) and os.path.getsize(self.config_filename):
 			with open(self.config_filename, 'rb') as f:
 				content = f.read()
 				if content != b'':
@@ -146,7 +146,7 @@ class SDSetup:
 
 	def load_cache(self):
 		self.cache = {'updated-sd-repo': False, 'downloaded_models_in_discord_channel': [], 'models_in_civitai_favorites': []}
-		if os.path.exists(self.cache_filename):
+		if os.path.exists(self.cache_filename) and os.path.getsize(self.cache_filename):
 			with open(self.cache_filename, 'rb') as f:
 				content = f.read()
 				if content != b'':
@@ -205,7 +205,8 @@ class SDSetup:
 			dir_path = 'extensions/sd-webui-controlnet/models'
 			for key, value in self.controlnet_models.items():
 				if value:
-					if os.path.exists(f'{dir_path}/{key}.pth'):
+					full_path = f'{dir_path}/{key}.pth'
+					if os.path.exists(full_path) and os.path.getsize(full_path):
 						cprint(f'\ncontrolnet model {key} is already installed', GREEN)
 					else:
 						cprint(f'\ndownloading the {key} controlnet model...', GREEN)
@@ -363,7 +364,7 @@ class SDSetup:
 				# These are needed anyway, no prompt (Config type files are .yaml files)
 				if file['type'] in ['VAE', 'Config']:
 					vae_full_path = dir_path+'/'+file['name']
-					if not os.path.exists(vae_full_path):
+					if not os.path.exists(vae_full_path) or os.path.getsize(vae_full_path) == 0:
 						wget(model_url+'?type='+file['type'], output_dir=dir_path, output_filename=file['name'], show_progress=True)
 				# whatever it is, store it
 				else:
@@ -392,7 +393,7 @@ class SDSetup:
 		# download its preview image
 		if len(previews) > 0:
 			preview_full_path = f'{dir_path}/{model_name}.preview.png'
-			if not os.path.exists(preview_full_path):
+			if not os.path.exists(preview_full_path) or os.path.getsize(preview_full_path) == 0:
 				wget(previews.xpath('./div/div/div[2]/div/div[1]/img/@src').get(), output_dir=dir_path, output_filename=f'{model_name}.preview.png', show_progress=False)
 		return (model_type, model_id, model_name, model_url, model_page_id, dir_path, full_path)
 
@@ -413,7 +414,7 @@ class SDSetup:
 				if model_info == None: continue
 				# otherwise just unpack the model info
 				model_type, model_id, model_name, model_url, model_page_id, dir_path, full_path = model_info
-				if os.path.exists(full_path):
+				if os.path.exists(full_path) and os.path.getsize(full_path) != 0:
 					# was downloaded without the help of this script
 					cprint(f'{model_name} is already installed', GREEN)
 					# add it to cache
@@ -458,7 +459,7 @@ class SDSetup:
 				dir_path = os.path.dirname(full_path)
 			cprint(f'\n({self.k}/{self.n})', GREEN)
 			# delete the file
-			if os.path.exists(full_path):
+			if os.path.exists(full_path) and os.path.getsize(full_path) != 0:
 				cprint(f'deleting {full_path}...', GREEN)
 				os.system(f'rm -f "{full_path}"')
 			# file not found or was already deleted
@@ -486,7 +487,7 @@ class SDSetup:
 				model_type, _, _, model_name, _, _ = self.cache['downloaded_models_in_discord_channel'][model_index].values()
 				dir_path = self.models_folder[model_type]
 				full_path = f'{dir_path}/{model_name}'+'.safetensors'
-				if os.path.exists(full_path):
+				if os.path.exists(full_path) and os.path.getsize(full_path) != 0:
 					# delete it
 					cprint(f'deleting {model_name}...', GREEN)
 					os.system(f'rm -f "{full_path}"')
@@ -507,7 +508,7 @@ class SDSetup:
 				model_name = model['model_name']
 				dir_path = self.models_folder[model_type]
 				full_path = f'{dir_path}/{model_name}'+'.safetensors'
-				if os.path.exists(full_path):
+				if os.path.exists(full_path) and os.path.getsize(full_path) != 0:
 					cprint(f'deleting {model_name}...', GREEN)
 					os.system(f'rm -f "{full_path}"')
 					# updating cache (cannot use indices since we are iterating over the list itself :c)
