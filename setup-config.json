@@ -25,8 +25,8 @@
 	(that would not need to clone the entire repo to speed up the setup like it currently does) */
 	"clone_sd_repo": false,
 
-	// required for lycoris models from civitai to work 
-	"clone_lycoris_repo": true,
+	// required for lycoris models from civitai to work (not needed anymore)
+	// "clone_lycoris_repo": true,
 
 	// see https://github.com/lllyasviel/ControlNet if you don't know what controlnet is
 	"clone_controlnet_repo": true,

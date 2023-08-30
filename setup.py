@@ -191,10 +191,11 @@ class SDSetup:
 			os.system('mv repositories/stablediffusion repositories/stable-diffusion-stability-ai')
 			self.cache['updated-sd-repo'] = True
 
-		# clone the lyoris repo
-		if self.clone_lycoris_repo and not os.path.exists('extensions/a1111-sd-webui-lycoris'):
-			cprint('\ncloning the lycoris ripo...', GREEN)
-			os.system('cd extensions && git clone https://github.com/KohakuBlueleaf/a1111-sd-webui-lycoris')
+		# clone the lyoris repo (not needed anymore)
+		# if self.clone_lycoris_repo and not os.path.exists('extensions/a1111-sd-webui-lycoris'):
+		# 	cprint('\ncloning the lycoris ripo...', GREEN)
+		# 	os.system('cd extensions && git clone https://github.com/KohakuBlueleaf/a1111-sd-webui-lycoris')
+		#	self.clone_lycoris_repo = False
 
 		# clone the controlnet repo and models
 		if self.clone_controlnet_repo:
