@@ -23,23 +23,19 @@ python setup.py -m
 ```
 Your setup.py is now ready!
 
-* On Linux or WSL:
-
-Paste it in any Stable Diffusion web UI repository and run:
+Put it in any Stable Diffusion web UI repository and run:
 ```
 python setup.py
 ```
 Your Stable Diffusion web UI repository is now setup!
-
-* On Windows:
-
-Does not work on windows for now.
 
 ## Instructions and Tips
 
 - Messages with only text (no attachments, no embeds) are SKIPPED
 
 - Use reactions to give instructions in the discord channel : 🚫 SKIP, ❌ DELETE (prioritizes SKIP over DELETE if both reaction are on).
+
+- Deleting a file/model or removing a model from your civitai favorites will delete it.
 
 - Some good to have files are in the files folder, you can upload them in your Discord channel if you like.
 
@@ -76,8 +72,6 @@ Does not work on windows for now.
 ## Warnings
 
 - This script do not check if models were manually installed before the first setup, because models file names could have been renamed thus giving no information on what model it is. It could not even know if it's on civitai (a -c, --cache option could be added to seek for installed models and update cache with what it finds but sounds not reliable at all). So if you want all your previous models to be managed by this script as well, delete them all and let it download them setting up its cache.
-
-- If you see (12/11) for example that means it is going through the cache and figuring out if some of the models were not found in the discord channel or your civitai favorites and deleting them if so.
 
 - The only right way to reset the cache is to delete the .setup-cache cache file.
 
