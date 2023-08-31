@@ -13,9 +13,10 @@ except:
 	os.system('pip install parsel')
 	from parsel import Selector
 
-# python executable
+# constants
 
 py_exe = os.path.basename(sys.executable)
+from_windows = sys.platform.startswith('win')
 
 # generic functions
 
@@ -30,12 +31,13 @@ def wget(url:str, output_filename:str=None, output_dir:str=None, show_progress:b
 	auth_opt = f'--user "{auth[0]}" --password "{auth[1]}"' if auth != None else ''
 	header_opt = ' '.join([f'--header="{key}: {value}"' for key, value in headers.items()]) if headers != None else ''
 	cmd = f'wget {quiet_opt} {progress_opt} {output_opt} {auth_opt} {header_opt} "{url}"'
+	
 	if print_cmd:
 		if header_opt != '': header_opt = '--header=...'
-		print(f'wget {quiet_opt} {progress_opt} {output_opt} {auth_opt} {header_opt} {url}')
+		print(f'wget --tries=3 --retry-connrefused --wait=1 --random-wait {quiet_opt} {progress_opt} {output_opt} {auth_opt} {header_opt} {url}')
 	
 	if output_dir != None:
-		if os.path.exists(output_dir) and os.path.getsize(output_dir):
+		if os.path.exists(output_dir):
 			os.system(f'cd "{output_dir}" && {cmd}')
 		else:
 			cprint(f'\ncould not wget "{url}" in "{output_dir}" because it does not exists', RED)
@@ -46,15 +48,50 @@ def wget(url:str, output_filename:str=None, output_dir:str=None, show_progress:b
 	if output_filename == None:
 		output_filename = max(os.listdir(), key=os.path.getmtime)
 	full_path = f'{output_dir}/{output_filename}' if output_dir != None else output_filename
-	if os.path.exists(full_path) and os.path.getsize(full_path) != 0:
-		with open(full_path, 'rb') as f:
-			if f.read() == b'':
-				cprint(f'\nthis command:\n{cmd}\ndownloaded a file of 0 bytes', RED)
-				return False
+	if os.path.exists(full_path):
+		if os.path.getsize(full_path) == 0:
+			cprint(f'\nthis command:\n{cmd}\nseemed to have failed', RED)
+			return False
 	else:
 		cprint(f'\nthis command:\n{cmd}\nseemed to have failed', RED)
 		return False
 	return True
+
+def curl(url: str, output_filename: str = None, output_dir: str = None, show_progress: bool = True, quiet: bool = False, auth: tuple[str, str] = None, headers: dict = None, print_cmd: bool = False):
+	output_opt = f'-o "{output_filename}"' if output_filename else ''
+	progress_opt = '--progress-bar' if show_progress else ''
+	quiet_opt = '-s' if quiet else ''
+	auth_opt = f'-u "{auth[0]}:{auth[1]}"' if auth else ''
+	header_opt = ' '.join([f'-H "{key}: {value}"' for key, value in headers.items()]) if headers else ''
+	cmd = f'curl --retry 3 --retry-max-time 10 {quiet_opt} {progress_opt} {output_opt} {auth_opt} {header_opt} "{url}"'
+	
+	if print_cmd:
+		if header_opt:
+			header_opt = '-H ...'
+		print(f'curl {quiet_opt} {progress_opt} {output_opt} {auth_opt} {header_opt} "{url}"')
+	
+	if output_dir:
+		if os.path.exists(output_dir):
+			os.system(f'cd "{output_dir}" && {cmd}')
+		else:
+			print(f'\ncould not curl "{url}" in "{output_dir}" because it does not exist')
+			return False
+	else:
+		os.system(cmd)
+	
+	if output_filename is None:
+		output_filename = max(os.listdir(), key=os.path.getmtime)
+	full_path = os.path.join(output_dir, output_filename) if output_dir else output_filename
+	if os.path.exists(full_path):
+		if os.path.getsize(full_path) == 0:
+			cprint(f'\nthis command:\n{cmd}\nseemed to have failed', RED)
+			return False
+	else:
+		cprint(f'\nthis command:\n{cmd}\nseemed to have failed', RED)
+		return False
+	return True
+
+download_function = curl if from_windows else wget
 
 def get_path(name, directory=None):
 	if directory == None: directory = os.getcwd()
@@ -186,9 +223,9 @@ class SDSetup:
 		if self.clone_sd_repo and not self.cache['updated-sd-repo']:
 			cprint('\ncloning the stablediffusion ripo...', GREEN)
 			if os.path.exists('repositories/stable-diffusion-stability-ai'):
-				os.system('rm -rf repositories/stable-diffusion-stability-ai')
+				os.system('rmdir /s /q repositories/stable-diffusion-stability-ai' if from_windows else 'rm -rf repositories/stable-diffusion-stability-ai')
 			os.system('cd repositories && git clone https://github.com/Stability-AI/stablediffusion')
-			os.system('mv repositories/stablediffusion repositories/stable-diffusion-stability-ai')
+			os.system('move repositories/stablediffusion repositories/stable-diffusion-stability-ai' if from_windows else 'mv repositories/stablediffusion repositories/stable-diffusion-stability-ai')
 			self.cache['updated-sd-repo'] = True
 
 		# clone the lyoris repo (not needed anymore)
@@ -213,7 +250,7 @@ class SDSetup:
 					else:
 						cprint(f'\ndownloading the {key} controlnet model...', GREEN)
 						controlnet_model_link = f'{base_link}/resolve/main/control_v11p_sd15_{key}.pth' if key != 'lineart_anime' else f'{base_link}/resolve/main/control_v11p_sd15s2_lineart_anime.pth'
-						wget(controlnet_model_link, output_dir=dir_path, output_filename=key+'.pth')
+						download_function(controlnet_model_link, output_dir=dir_path, output_filename=key+'.pth', show_progress=True, quiet=False)
 				# else:
 				# 	if os.path.exists(f'{dir_path}/{key}.pth'):
 				# 		cprint(f'\ndeleting controlnet model {key}... ', GREEN)
@@ -241,7 +278,7 @@ class SDSetup:
 		content = content[:i]+'\n'+content[j:]
 		# replace
 		content = content.replace('class SDSetup:', mount, 1)
-		if sys.platform.startswith('win'):
+		if from_windows:
 			content = content.replace('\r\n','\r')
 		# write
 		with open(__file__, 'w') as f:
@@ -268,6 +305,8 @@ class SDSetup:
 			self.load_cache()
 			self.wd = os.getcwd()
 			self.running_in_runpod_env = self.wd == '/workspace/stable-diffusion-webui'
+			if not from_windows:
+				self.bashrc_path = '/root/.bashrc' if self.running_in_runpod_env else get_path('.bashrc', directory='/home')
 			# is used to then compare which models of the cache were not found thus deleting them
 			self.currently_found_model_page_ids = []
 			# used for display
@@ -291,13 +330,18 @@ class SDSetup:
 		else:
 			cprint(f'this setup.py has not been mounted with a config\nrun \'{py_exe} setup.py -m\' to do so', RED)
 			exit(1)
-		if not self.args['quick']: os.system('bash -c "read -p \'\nInitialization done, Press Enter\'"')
+		if not self.args['quick']:
+			if from_windows:
+				os.system('echo Initialization done, Press Enter')
+				os.system('pause > nul')
+			else:
+				os.system('bash -c "read -p \'\nInitialization done, Press Enter\'"')
 
 	def get_messages(self):
 		# get messages from channel
 		cprint('getting messages...', BLUE)
 		url = f"https://discord.com/api/v9/channels/{self.channel_id}/messages?limit={self.msg_limit}" if self.msg_limit != -1 else f"https://discord.com/api/v9/channels/{self.channel_id}/messages"
-		if wget(url, output_filename='messages', headers=self.discord_headers):
+		if download_function(url, output_filename='messages', headers=self.discord_headers, show_progress=False, quiet=True):
 			with open('messages', 'rb') as f:
 				self.messages = json.loads(f.read().decode('utf-8'))
 			return True
@@ -305,6 +349,8 @@ class SDSetup:
 
 	def parse_reactions(self, message):
 		SKIP, INSTALL, DELETE = False, False, False
+		# Skip only text messages
+		if not message['embeds'] and not message['attachments']: return True, False, False
 		# parse reactions (prioritizes SKIP over DELETE if both reaction are on)
 		if 'reactions' in message:
 			for reaction in message['reactions']:
@@ -330,17 +376,20 @@ class SDSetup:
 			if full_path == None:
 				# create it in wd by default
 				full_path = f'{dir_path}/{file_name}'
-				if not self.show_files_progress_bar: cprint(f'downloading {file_name} in {dir_path}...', GREEN)
+				if not self.show_files_progress_bar or from_windows: cprint(f'[File] downloading {file_name} in {dir_path}...', GREEN)
 			else:
 				# overwrite the file found
 				dir_path = os.path.dirname(full_path)
-				if not self.show_files_progress_bar: cprint(f'overwriting {file_name} in {dir_path}...', GREEN)
+				if not self.show_files_progress_bar or from_windows: cprint(f'[File] overwriting {file_name} in {dir_path}...', GREEN)
 
-			wget(file_url, output_filename=file_name, output_dir=dir_path, show_progress=self.show_files_progress_bar)
+			if from_windows:
+				curl(file_url, output_filename=file_name, output_dir=dir_path, quiet=not self.show_files_progress_bar)
+			else:
+				wget(file_url, output_filename=file_name, output_dir=dir_path, show_progress=self.show_files_progress_bar)
 
 	def get_model_info(self, model_page_url):
 		# get its page
-		if not wget(model_page_url, output_filename='page', show_progress=False):
+		if not download_function(model_page_url, output_filename='page', show_progress=False, quiet=True):
 			return None
 		# parse the page
 		with open('page', 'rb') as f:
@@ -371,7 +420,7 @@ class SDSetup:
 				if file['type'] in ['VAE', 'Config']:
 					vae_full_path = dir_path+'/'+file['name']
 					if not os.path.exists(vae_full_path) or os.path.getsize(vae_full_path) == 0:
-						wget(model_url+'?type='+file['type'], output_dir=dir_path, output_filename=file['name'], show_progress=True)
+						download_function(model_url+'?type='+file['type'], output_dir=dir_path, output_filename=file['name'], show_progress=False, quiet=True)
 				# whatever it is, store it
 				else:
 					model_versions.append({'model_index': i, 'type': file['type'], 'size': round(file['sizeKB']), 'metadata': {'fp': file['metadata']['fp'], 'size': file['metadata']['size'], 'format': file['metadata']['format']}})
@@ -400,7 +449,10 @@ class SDSetup:
 		if len(previews) > 0:
 			preview_full_path = f'{dir_path}/{model_name}.preview.png'
 			if not os.path.exists(preview_full_path) or os.path.getsize(preview_full_path) == 0:
-				wget(previews.xpath('./div/div/div[2]/div/div[1]/img/@src').get(), output_dir=dir_path, output_filename=f'{model_name}.preview.png', show_progress=False)
+				tmp = previews.xpath('./div/div/div[2]/div/div[1]/img/@src').get()
+				tmp = tmp.split("/")
+				src = '/'.join(tmp[:6])
+				download_function(src, output_dir=dir_path, output_filename=f'{model_name}.preview.png', show_progress=False, quiet=True)
 		return (model_type, model_id, model_name, model_url, model_page_id, dir_path, full_path)
 
 	def install_models(self, embeds):
@@ -419,10 +471,12 @@ class SDSetup:
 				if model_info == None: continue
 				# otherwise just unpack the model info
 				model_type, model_id, model_name, model_url, model_page_id, dir_path, full_path = model_info
+				if model_type != 'TextualInversion':
+					model_url = subprocess.run(["curl", model_url], text=True, capture_output=True, check=True).stdout
 				if model_type == 'Poses':
 					if os.path.exists(full_path):
 						# was downloaded without the help of this script
-						cprint(f'{model_name} is already installed', GREEN)
+						cprint(f'[{model_type}] {model_name} is already installed', GREEN)
 						# add it to cache
 						self.cache['downloaded_models_in_discord_channel'].append({
 							'model_type': model_type,
@@ -433,8 +487,13 @@ class SDSetup:
 							'model_page_url': model_page_url})
 					else:
 						# download it
-						if not self.show_models_progress_bar: cprint(f'installing {model_name}...', GREEN)
-						if wget(model_url, output_dir=dir_path, output_filename=model_name+'.zip', show_progress=self.show_models_progress_bar):
+						if not self.show_models_progress_bar or from_windows: cprint(f'[{model_type}] installing {model_name}...', GREEN)
+						os.system(f'mkdir extensions\\sd-webui-controlnet\\poses\\{model_name}' if from_windows else f'mkdir extensions/sd-webui-controlnet/poses/{model_name}')
+						if from_windows:
+							tmp = curl(model_url, output_dir=dir_path+'/'+model_name, output_filename=model_name+'.zip', quiet=not self.show_models_progress_bar)
+						else:
+							tmp = wget(model_url, output_dir=dir_path+'/'+model_name, output_filename=model_name+'.zip', show_progress=self.show_models_progress_bar)
+						if tmp:
 							# add it to cache
 							self.cache['downloaded_models_in_discord_channel'].append({
 								'model_type': model_type,
@@ -444,16 +503,16 @@ class SDSetup:
 								'model_page_id': model_page_id,
 								'model_page_url': model_page_url})
 							# convert the zip into a folder
-							os.system(	f'cd extensions/sd-webui-controlnet/poses &&' + \
-										f'mkdir {model_name} &&' \
-										f'mv {model_name}.zip {model_name} &&' \
-										f'cd {model_name} &&' \
-										f'unzip {model_name}.zip &&' \
+							os.system(	f'cd extensions\\sd-webui-controlnet\\poses\\{model_name} &&' + \
+										f'tar -xf {model_name}.zip &&' + \
+										f'del {model_name}.zip' if from_windows else
+										f'cd extensions/sd-webui-controlnet/poses/{model_name} &&' + \
+										f'unzip {model_name}.zip &&' + \
 										f'rm {model_name}.zip')
 				else:
 					if os.path.exists(full_path) and os.path.getsize(full_path) != 0:
 						# was downloaded without the help of this script
-						cprint(f'{model_name} is already installed', GREEN)
+						cprint(f'[{model_type}] {model_name} is already installed', GREEN)
 						# add it to cache
 						self.cache['downloaded_models_in_discord_channel'].append({
 							'model_type': model_type,
@@ -464,8 +523,12 @@ class SDSetup:
 							'model_page_url': model_page_url})
 					else:
 						# download it
-						if not self.show_models_progress_bar: cprint(f'installing {model_name}...', GREEN)
-						if wget(model_url, output_dir=dir_path, output_filename=model_name+'.safetensors', show_progress=self.show_models_progress_bar):
+						if not self.show_models_progress_bar or from_windows: cprint(f'[{model_type}] installing {model_name}...', GREEN)
+						if from_windows:
+							tmp = curl(model_url, output_dir=dir_path, output_filename=model_name+'.safetensors', quiet=not self.show_models_progress_bar)
+						else:
+							tmp = wget(model_url, output_dir=dir_path, output_filename=model_name+'.safetensors', show_progress=self.show_models_progress_bar)
+						if tmp:
 							# add it to cache
 							self.cache['downloaded_models_in_discord_channel'].append({
 								'model_type': model_type,
@@ -478,8 +541,8 @@ class SDSetup:
 			else:
 				# get its info
 				# model_type, model_id, model_name, model_url, model_page_id, model_page_url
-				_, _, _, model_name, model_page_id, _ = self.cache['downloaded_models_in_discord_channel'][model_index].values()
-				cprint(f'{model_name} is already installed', GREEN)
+				model_type, _, _, model_name, model_page_id, _ = self.cache['downloaded_models_in_discord_channel'][model_index].values()
+				cprint(f'[{model_type}] {model_name} is already installed', GREEN)
 
 			self.currently_found_model_page_ids.append(model_page_id)
 
@@ -496,8 +559,8 @@ class SDSetup:
 			cprint(f'\n({self.k}/{self.n})', GREEN)
 			# delete the file
 			if os.path.exists(full_path) and os.path.getsize(full_path) != 0:
-				cprint(f'deleting {full_path}...', GREEN)
-				os.system(f'rm -f "{full_path}"')
+				cprint(f'[File] deleting {full_path}...', GREEN)
+				os.system(f'del /q "{full_path}"' if from_windows else f'rm -f "{full_path}"')
 			# file not found or was already deleted
 			else:
 				cprint(f'{full_path} is already deleted', GREEN)
@@ -525,8 +588,8 @@ class SDSetup:
 				full_path = f'{dir_path}/{model_name}'+'.safetensors'
 				if os.path.exists(full_path) and os.path.getsize(full_path) != 0:
 					# delete it
-					cprint(f'deleting {model_name}...', GREEN)
-					os.system(f'rm -f "{full_path}"')
+					cprint(f'[{model_type}] deleting {model_name}...', GREEN)
+					os.system(f'del /q "{full_path}"' if from_windows else f'rm -f "{full_path}"')
 				else:
 					# was deleted without the help of this script
 					cprint(f'{model_name} is already deleted', GREEN)
@@ -545,8 +608,8 @@ class SDSetup:
 				dir_path = self.models_folder[model_type]
 				full_path = f'{dir_path}/{model_name}'+'.safetensors'
 				if os.path.exists(full_path) and os.path.getsize(full_path) != 0:
-					cprint(f'deleting {model_name}...', GREEN)
-					os.system(f'rm -f "{full_path}"')
+					cprint(f'[{model_type}] deleting {model_name}...', GREEN)
+					os.system(f'del /q "{full_path}"' if from_windows else f'rm -f "{full_path}"')
 					# updating cache (cannot use indices since we are iterating over the list itself :c)
 					self.cache[source].remove(model)
 				else:
@@ -616,7 +679,7 @@ class SDSetup:
 
 	def get_favorites(self):
 		cprint('\ngetting favorites...', BLUE)
-		if wget('https://civitai.com/api/v1/models?favorites=true', headers=self.civitai_headers, output_filename='favorites'):
+		if download_function('https://civitai.com/api/v1/models?favorites=true', headers=self.civitai_headers, output_filename='favorites', show_progress=False, quiet=True):
 			with open('favorites', 'rb') as f:
 				self.favorites = json.loads(f.read().decode('utf-8'))
 			return True
@@ -646,7 +709,7 @@ class SDSetup:
 
 			# yes it is
 			if model_index != -1:
-				cprint(f'{model_name} is already installed', GREEN)
+				cprint(f'[{model_type}] {model_name} is already installed', GREEN)
 			# no it is not
 			else:
 				# get its info
@@ -654,8 +717,12 @@ class SDSetup:
 				model_url = 'https://civitai.com/api/download/models/'+model_id
 				model_page_url = f'https://civitai.com/models/'+model_page_id
 				# download it
-				if not self.show_models_progress_bar: cprint(f'installing {model_name}...', GREEN)
-				if wget(model_url, output_dir=dir_path, output_filename=model_name+'.safetensors', show_progress=self.show_models_progress_bar):
+				if not self.show_models_progress_bar or from_windows: cprint(f'[{model_type}] installing {model_name}...', GREEN)
+				if from_windows:
+					tmp = curl(model_url, output_dir=dir_path, output_filename=model_name+'.safetensors', quiet=not self.show_models_progress_bar)
+				else:
+					tmp = wget(model_url, output_dir=dir_path, output_filename=model_name+'.safetensors', show_progress=self.show_models_progress_bar)
+				if tmp:
 					# add it to cache
 					self.cache['models_in_civitai_favorites'].append({
 						'model_type': model_type,
@@ -675,50 +742,64 @@ class SDSetup:
 			json.dump(self.cache, f, indent=3)
 
 	def set_relauncher_alias(self):
-		if self.running_in_runpod_env:
-			wget('https://cdn.discordapp.com/attachments/1103108086857744406/1146213681030512640/relauncher.py')
-		# for convenience
-		bashrc_path = '/root/.bashrc' if self.running_in_runpod_env else get_path('.bashrc', directory='/home')
-		if bashrc_path != None:
-			with open(bashrc_path, 'r') as f:
-				bashrc_content = f.read()
-			if f'alias r="{py_exe} relauncher.py"' not in bashrc_content:
-			# if bashrc_content.split('\n')[-1].strip() != 'alias r="python relauncher.py"':
-			# if bashrc_content[-(len('alias r="python relauncher.py"')+1):].strip() != 'alias r="python relauncher.py"':
-				os.system(f"echo 'alias r=\"{py_exe} relauncher.py\"' >> {bashrc_path}")
-			cprint('\nrun the r command to run the relauncher.py script', PURPLE)
+		download_function('https://cdn.discordapp.com/attachments/1103108086857744406/1146213681030512640/relauncher.py', show_progress=False, quiet=True, output_filename='relauncher.py')
+		if from_windows:
+			# source: ChatGPT, set a permanent alias
+			registry_key = 'HKEY_CURRENT_USER\\Software\\Microsoft\\Command Processor'
+			alias = f'doskey r={py_exe} relauncher.py'
+			try:
+				subprocess.run(['reg', 'add', registry_key, '/v', 'AutoRun', '/t', 'REG_EXPAND_SZ', '/d', alias, '/f'], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			except subprocess.CalledProcessError:
+				print("\nan error occurred while setting the alias")
 		else:
-			cprint('\ncould not find the .bashrc file', RED)
+			if self.bashrc_path != None:
+				with open(self.bashrc_path, 'r') as f:
+					bashrc_content = f.read()
+				if f'alias r="{py_exe} relauncher.py"' not in bashrc_content:
+					os.system(f"echo 'alias r=\"{py_exe} relauncher.py\"' >> {self.bashrc_path}")
+				cprint('\nrun the r command to run the relauncher.py script', PURPLE)
+			else:
+				cprint('\ncould not find the .bashrc file', RED)
+			# reload terminal (to reload .bashrc, will lose the commands history :c)
+			os.system(f'. "{self.bashrc_path}"')
 
 	def cleanup(self):
 		# hang to let the user read eventual errors
-		if not self.args['quick']: os.system('bash -c "read -p \'\nPress Enter\'"')
-		os.system("clear")
+		if not self.args['quick']:
+			if from_windows:
+				os.system('echo Press Enter')
+				os.system('pause > nul')
+			else:
+				 os.system('bash -c "read -p \'\nPress Enter\'"')
+		os.system('cls' if from_windows else 'clear')
 		# cleanup
-		os.system(f'rm -f messages page favorites')
+		os.system(f'del /q messages page favorites' if from_windows else f'rm -f messages page favorites')
 		# self destroys
-		if self.args['destroy']: subprocess.Popen('rm setup.py', shell=True)
+		if self.args['destroy']:
+			if from_windows:
+				subprocess.Popen('del setup.py', shell=True)
+			else:
+				subprocess.Popen(f'. "{self.bashrc_path}" && rm setup.py', shell=True)
 
 	def setup(self):
 		self.setup_from_discord_messages()
 		if self.args['favorites']: self.setup_from_civitai_favorites()
 		self.save_cache()
 		self.set_relauncher_alias()
-		if not self.running_in_runpod_env:
-			cprint('\npopulating python env...', GREEN)
-			os.system('sudo apt install python3.10-venv')
-			os.system(f'{py_exe} -m venv venv/')
-		cprint('\ngets TCMalloc (improves CPU memory usage)', GREEN)
-		os.system('sudo apt install google-perftools')
+		if not from_windows:
+			if not self.running_in_runpod_env:
+				cprint('\npopulating python env...', GREEN)
+				os.system('sudo apt install -y python3.10-venv')
+				os.system(f'{py_exe} -m venv venv/')
+			cprint('\ngets TCMalloc (improves CPU memory usage)', GREEN)
+			os.system('sudo apt install -y google-perftools')
 		cprint('\nAll done', BLUE)
 		self.cleanup()
-		# reload terminal (to reload ~/.bashrc)
-		# will lose the commands history :c
-		os.system("exec bash")
+		
 
 def main():
 	sdsetup = SDSetup()
-	os.system("clear")
+	os.system('cls' if from_windows else 'clear')
 	sdsetup.setup()
 
 if __name__ == '__main__':

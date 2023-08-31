@@ -37,11 +37,13 @@ Does not work on windows for now.
 
 ## Instructions and Tips
 
+- Messages with only text (no attachments, no embeds) are SKIPPED
+
 - Use reactions to give instructions in the discord channel : 🚫 SKIP, ❌ DELETE (prioritizes SKIP over DELETE if both reaction are on).
 
 - Some good to have files are in the files folder, you can upload them in your Discord channel if you like.
 
-Some interesting lines in ui-config.json (for A1111 release 1.5.2):
+- Some interesting lines in ui-config.json (for A1111 release 1.5.2):
 
 	txt2img:
 	
@@ -108,13 +110,9 @@ Right click on the channel and click 'Copy Channel ID' c:
 
 ## TODO
 
-- Windows support
-
-- Add a prompt in case there are multiple files included with the model link (could also just be a VAE, in that case download it without prompting the user).
-
 - Add a way to rename downloaded models without breaking everything lol (updating the cache basically, could be done with smth like python setup.py -r \<path to model\> new_name (with or without the extension, using the path to be able to use TAB so that it's easier).
 
-- Add support for all other types (poses, controlnet, ...).
+- Add support for all types.
 
 - Have a preferred sampling method for each checkpoint (guess it based on the one used in the previews and prompt the user or use a default one if no preview).
 
